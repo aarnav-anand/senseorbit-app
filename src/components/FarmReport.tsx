@@ -100,10 +100,6 @@ export function FarmReport() {
         {activeTab === 'satellite' && <SatelliteTab data={satellite} error={satelliteError} />}
       </div>
 
-      <div className="no-print border-t border-earth-200 pt-4 text-center text-xs text-earth-500">
-        Imagery from Esri, other data from OpenStreetMap contributors · Contains modified Copernicus Sentinel data · Soil data © ISRIC SoilGrids · Weather data © Open-Meteo
-      </div>
-
       {/* Print view: show tabs stacked */}
       <div className="print-only space-y-8">
         <div>
@@ -119,7 +115,7 @@ export function FarmReport() {
           <SatelliteTab data={satellite} error={satelliteError} />
         </div>
         <div className="pt-4 text-center text-xs text-earth-500">
-          Imagery from Esri, other data from OpenStreetMap contributors · Contains modified Copernicus Sentinel data · Soil data © ISRIC SoilGrids · Weather data © Open-Meteo
+          {t('footer.attribution', 'Imagery from Esri, other data from OpenStreetMap contributors · Contains modified Copernicus Sentinel data · Soil data © ISRIC SoilGrids · Weather data © Open-Meteo')}
         </div>
       </div>
     </section>

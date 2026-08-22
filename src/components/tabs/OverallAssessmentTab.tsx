@@ -3,13 +3,13 @@ import { useFarmStore } from '../../store/farmStore';
 import { generateOverallAssessment } from '../../utils/assessment';
 
 export function OverallAssessmentTab() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const soil = useFarmStore((s) => s.soil);
   const weather = useFarmStore((s) => s.weather);
   const satellite = useFarmStore((s) => s.satellite);
   const boundary = useFarmStore((s) => s.boundary);
 
-  const assessment = generateOverallAssessment(soil, weather, satellite, boundary);
+  const assessment = generateOverallAssessment(soil, weather, satellite, boundary, i18n.language);
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-emerald-700 bg-emerald-50 border-emerald-200';
@@ -19,8 +19,8 @@ export function OverallAssessmentTab() {
   };
 
   const getBadgeColor = (level: string) => {
-    if (level === 'High') return 'bg-red-100 text-red-800 border-red-200';
-    if (level === 'Medium') return 'bg-amber-100 text-amber-800 border-amber-200';
+    if (level === 'High' || level === 'उच्च') return 'bg-red-100 text-red-800 border-red-200';
+    if (level === 'Medium' || level === 'मध्यम') return 'bg-amber-100 text-amber-800 border-amber-200';
     return 'bg-blue-100 text-blue-800 border-blue-200';
   };
 
@@ -137,12 +137,12 @@ export function OverallAssessmentTab() {
                 <span className="font-semibold text-earth-900">{item.crop}</span>
                 <span
                   className={`rounded-md px-2 py-0.5 text-xs font-semibold border ${
-                    item.suitability === 'High'
+                    item.suitability === 'High' || item.suitability === 'उच्च'
                       ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
                       : 'bg-amber-100 text-amber-800 border-amber-200'
                   }`}
                 >
-                  {item.suitability} Suitability
+                  {item.suitability} {t('assessment.suitabilityLabel', 'Suitability')}
                 </span>
               </div>
               <p className="mt-1.5 text-xs text-earth-600">{item.reason}</p>

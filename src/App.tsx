@@ -139,7 +139,7 @@ export default function App() {
 
       <footer className="no-print mt-auto border-t border-earth-200 bg-white py-4 text-center text-xs text-earth-500">
         <div className="mx-auto max-w-7xl px-4">
-          Imagery from Esri, other data from OpenStreetMap contributors · Contains modified Copernicus Sentinel data · Soil data © ISRIC SoilGrids · Weather data © Open-Meteo
+          {t('footer.attribution', 'Imagery from Esri, other data from OpenStreetMap contributors · Contains modified Copernicus Sentinel data · Soil data © ISRIC SoilGrids · Weather data © Open-Meteo')}
         </div>
       </footer>
     </div>

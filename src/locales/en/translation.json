@@ -16,6 +16,9 @@
     "credits": "Credits",
     "logout": "Sign Out"
   },
+  "footer": {
+    "attribution": "Imagery from Esri, other data from OpenStreetMap contributors · Contains modified Copernicus Sentinel data · Soil data © ISRIC SoilGrids · Weather data © Open-Meteo"
+  },
   "nav": {
     "language": "Language",
     "english": "English",
@@ -76,6 +79,7 @@
     "precipitationTrend": "Rainfall Trend",
     "currTemp": "Current Temp / Humidity",
     "cropTitle": "Recommended Crops & Agricultural Advice",
+    "suitabilityLabel": "Suitability",
     "fertilizerTitle": "Fertilizer & Soil Amendment Plan",
     "irrigationTitle": "Irrigation & Water Management",
     "riskTitle": "Agronomic Risks & Warnings"

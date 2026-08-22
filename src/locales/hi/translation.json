@@ -16,6 +16,9 @@
     "credits": "क्रेडिट",
     "logout": "साइन आउट"
   },
+  "footer": {
+    "attribution": "Esri से इमेजरी, OpenStreetMap योगदानकर्ताओं का अन्य डेटा · संशोधित Copernicus Sentinel डेटा शामिल है · मिट्टी डेटा © ISRIC SoilGrids · मौसम डेटा © Open-Meteo"
+  },
   "nav": {
     "language": "भाषा",
     "english": "English",
@@ -76,6 +79,7 @@
     "precipitationTrend": "वर्षा का रुझान",
     "currTemp": "वर्तमान तापमान / आर्द्रता",
     "cropTitle": "अनुशंसित फसलें और कृषि सलाह",
+    "suitabilityLabel": "उपयुक्तता",
     "fertilizerTitle": "उर्वरक और मृदा सुधार योजना",
     "irrigationTitle": "सिंचाई और जल प्रबंधन",
     "riskTitle": "कृषि जोखिम और चेतावनियां"
