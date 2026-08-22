@@ -97,53 +97,86 @@ export async function checkWaterBody(lat: number, lon: number): Promise<WaterChe
       fetch(elevUrl).catch(() => null),
     ]);
 
+    const geoData = geoRes ? await geoRes.json().catch(() => null) : null;
+    const elevData = elevRes ? await elevRes.json().catch(() => null) : null;
+
+    const elevation = elevData?.elevation?.[0] ?? null;
+
+    // Rule 1: Unable to geocode in Nominatim = open ocean
+    if (geoData?.error === 'Unable to geocode' || (geoData?.error && !geoData?.display_name)) {
+      const result: WaterCheckResult = {
+        isWater: true,
+        reason: 'Unmapped open ocean/sea water area.',
+      };
+      setCache(cacheKey, result, CACHE_TTL.geocode);
+      return result;
+    }
+
+    const displayName = (geoData?.display_name || '').toLowerCase();
+    const address = geoData?.address || {};
+    const addressType = geoData?.addresstype || '';
+    const cls = geoData?.class || '';
+    const type = geoData?.type || '';
+
+    // Check if there is any local land address component
+    const hasLocalLandAddress = Boolean(
+      address.hamlet ||
+      address.village ||
+      address.town ||
+      address.city ||
+      address.suburb ||
+      address.county ||
+      address.state_district ||
+      address.municipality ||
+      address.road ||
+      address.neighbourhood ||
+      address.residential,
+    );
+
+    // Rule 2: Explicit water class/type
+    const isWaterClass =
+      cls === 'waterway' ||
+      (cls === 'natural' && ['water', 'bay', 'sea', 'ocean', 'coastline', 'wetland'].includes(type));
+
+    // Rule 3: Water keywords in display name
+    const waterKeywords = [
+      'sea',
+      'ocean',
+      'bay',
+      'gulf',
+      'lake',
+      'river',
+      'reservoir',
+      'waterbody',
+      'dam',
+      'strait',
+      'creek',
+      'estuary',
+      'lagoon',
+      'gulf of khambhat',
+      'gulf of kutch',
+      'arabian sea',
+      'bay of bengal',
+    ];
+    const isWaterKeyword = waterKeywords.some((kw) =>
+      new RegExp(`\\b${kw}\\b`, 'i').test(displayName),
+    );
+
+    // Rule 4: Country-only address or 0 elevation with no local land address
+    const isCountryOnly = addressType === 'country' || addressType === 'continent' || !hasLocalLandAddress;
+
     let isWater = false;
     let reason = '';
 
-    if (geoRes && geoRes.ok) {
-      const geoData = await geoRes.json();
-      const displayName = (geoData?.display_name || '').toLowerCase();
-      const addressType = geoData?.addresstype || '';
-      const cls = geoData?.class || '';
-      const type = geoData?.type || '';
-
-      const waterKeywords = [
-        'sea',
-        'ocean',
-        'bay',
-        'gulf',
-        'lake',
-        'river',
-        'reservoir',
-        'waterbody',
-        'dam',
-        'strait',
-        'creek',
-        'estuary',
-        'lagoon',
-      ];
-      const isWaterKeyword = waterKeywords.some((kw) =>
-        new RegExp(`\\b${kw}\\b`, 'i').test(displayName),
-      );
-
-      const isWaterClass =
-        cls === 'waterway' ||
-        (cls === 'natural' && ['water', 'bay', 'sea', 'ocean', 'coastline', 'wetland'].includes(type));
-      const isCountryOnly = addressType === 'country' || addressType === 'continent';
-
-      let elevation: number | null = null;
-      if (elevRes && elevRes.ok) {
-        const elevData = await elevRes.json();
-        elevation = elevData?.elevation?.[0] ?? null;
-      }
-
-      if (isWaterClass || isWaterKeyword) {
-        isWater = true;
-        reason = 'Boundary is over a mapped water body (lake, river, bay, or sea).';
-      } else if (elevation === 0 && isCountryOnly) {
-        isWater = true;
-        reason = 'Boundary is over an ocean or open sea water area.';
-      }
+    if (isWaterClass || isWaterKeyword) {
+      isWater = true;
+      reason = 'Boundary is over a mapped water body (lake, river, bay, or sea).';
+    } else if (isCountryOnly) {
+      isWater = true;
+      reason = 'Boundary is over an ocean or open sea water area (No local land address).';
+    } else if ((elevation === 0 || elevation === null) && !hasLocalLandAddress) {
+      isWater = true;
+      reason = 'Boundary is at sea level without land address.';
     }
 
     const result: WaterCheckResult = { isWater, reason };

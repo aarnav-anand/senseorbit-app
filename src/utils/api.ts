@@ -47,11 +47,104 @@ export function fetchLocationName(lat: number, lon: number): Promise<string> {
   }).then((r) => r.name);
 }
 
-export function fetchWaterCheck(lat: number, lon: number): Promise<WaterCheckResult> {
-  return apiGet<WaterCheckResult>('/api/check-water', {
-    lat: String(lat),
-    lon: String(lon),
-  }).catch(() => ({ isWater: false }));
+/**
+ * Direct client-side water check fallback in case backend route is unreachable.
+ */
+export async function directWaterCheck(lat: number, lon: number): Promise<WaterCheckResult> {
+  try {
+    const geoUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=14`;
+    const elevUrl = `https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`;
+
+    const [geoRes, elevRes] = await Promise.all([
+      fetch(geoUrl, {
+        headers: {
+          'User-Agent': 'SenseOrbit/1.0 (farm boundary mapping app)',
+          Accept: 'application/json',
+        },
+      }).catch(() => null),
+      fetch(elevUrl).catch(() => null),
+    ]);
+
+    const geoData = geoRes ? await geoRes.json().catch(() => null) : null;
+    const elevData = elevRes ? await elevRes.json().catch(() => null) : null;
+
+    const elevation = elevData?.elevation?.[0] ?? null;
+
+    if (geoData?.error === 'Unable to geocode' || (geoData?.error && !geoData?.display_name)) {
+      return { isWater: true, reason: 'Unmapped open ocean water.' };
+    }
+
+    const displayName = (geoData?.display_name || '').toLowerCase();
+    const address = geoData?.address || {};
+    const addressType = geoData?.addresstype || '';
+    const cls = geoData?.class || '';
+    const type = geoData?.type || '';
+
+    const hasLocalLandAddress = Boolean(
+      address.hamlet ||
+      address.village ||
+      address.town ||
+      address.city ||
+      address.suburb ||
+      address.county ||
+      address.state_district ||
+      address.municipality ||
+      address.road ||
+      address.neighbourhood ||
+      address.residential,
+    );
+
+    const isWaterClass =
+      cls === 'waterway' ||
+      (cls === 'natural' && ['water', 'bay', 'sea', 'ocean', 'coastline', 'wetland'].includes(type));
+
+    const waterKeywords = [
+      'sea',
+      'ocean',
+      'bay',
+      'gulf',
+      'lake',
+      'river',
+      'reservoir',
+      'waterbody',
+      'dam',
+      'strait',
+      'creek',
+      'estuary',
+      'lagoon',
+      'gulf of khambhat',
+      'gulf of kutch',
+      'arabian sea',
+      'bay of bengal',
+    ];
+    const isWaterKeyword = waterKeywords.some((kw) =>
+      new RegExp(`\\b${kw}\\b`, 'i').test(displayName),
+    );
+
+    const isCountryOnly = addressType === 'country' || addressType === 'continent' || !hasLocalLandAddress;
+
+    if (isWaterClass || isWaterKeyword || isCountryOnly || ((elevation === 0 || elevation === null) && !hasLocalLandAddress)) {
+      return { isWater: true, reason: 'Boundary is over water.' };
+    }
+
+    return { isWater: false };
+  } catch {
+    return { isWater: false };
+  }
+}
+
+export async function fetchWaterCheck(lat: number, lon: number): Promise<WaterCheckResult> {
+  try {
+    const res = await apiGet<WaterCheckResult>('/api/check-water', {
+      lat: String(lat),
+      lon: String(lon),
+    });
+    if (res.isWater) return res;
+  } catch {
+    // Fall back to direct client check
+  }
+
+  return directWaterCheck(lat, lon);
 }
 
 export async function fetchFullReport(lat: number, lon: number) {
