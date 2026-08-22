@@ -1,0 +1,181 @@
+{
+  "app": {
+    "name": "SenseOrbit",
+    "tagline": "Draw your farm boundary and get soil, weather & satellite insights — powered by accredited APIs."
+  },
+  "login": {
+    "subtitle": "Enter your 4-character DIF code to sign in and view your farm scans",
+    "difCodeLabel": "4-Character DIF Code",
+    "signInButton": "Sign In",
+    "verifying": "Verifying Code…",
+    "emptyError": "Please enter your 4-character DIF code.",
+    "invalidCode": "Invalid DIF Code. Please check your 4-character code and try again.",
+    "networkError": "Could not verify DIF code. Please check your connection."
+  },
+  "header": {
+    "credits": "Credits",
+    "logout": "Sign Out"
+  },
+  "nav": {
+    "language": "Language",
+    "english": "English",
+    "hindi": "हिंदी"
+  },
+  "map": {
+    "title": "Draw Your Farm Boundary",
+    "subtitle": "Use the polygon tool on the map to outline your field. Tap each corner, then close the shape.",
+    "searchPlaceholder": "Search village or town…",
+    "searchButton": "Search",
+    "useMyLocation": "Use my location",
+    "locationDenied": "Location access denied. You can still search or draw manually.",
+    "locationError": "Could not get your location.",
+    "drawHint": "Tap the polygon tool, then tap corners of your farm on the map.",
+    "confirmBoundary": "Confirm boundary",
+    "clearBoundary": "Clear",
+    "editBoundary": "Edit boundary",
+    "area": "Area",
+    "hectares": "hectares",
+    "acres": "acres",
+    "centroid": "Center point",
+    "invalidPolygon": "Your boundary crosses itself. Please fix it before generating a report.",
+    "noPolygon": "Draw a farm boundary on the map first.",
+    "polygonTooSmall": "The drawn area is too small. Please draw a larger boundary.",
+    "generatingReport": "Generating report…",
+    "basemap": {
+      "street": "Street map",
+      "satellite": "Satellite (Esri World Imagery)"
+    }
+  },
+  "report": {
+    "title": "Farm Scan & Agronomic Report",
+    "location": "Location",
+    "generatedAt": "Generated",
+    "tabs": {
+      "assessment": "Overall Assessment",
+      "soil": "Soil",
+      "weather": "Weather",
+      "satellite": "Satellite"
+    },
+    "loading": "Loading live accredited scan data…",
+    "error": "Could not load report data. Please try again.",
+    "retry": "Retry",
+    "downloadPdf": "Download PDF",
+    "share": "Share link",
+    "shareCopied": "Link copied!",
+    "shareFailed": "Could not copy link.",
+    "backToMap": "Back to map"
+  },
+  "assessment": {
+    "badge": "AI & Multi-Source Synthesized",
+    "title": "Overall Farm & Field Assessment",
+    "soilTitle": "Soil Profile Analysis",
+    "weatherTitle": "Microclimate & Rainfall Outlook",
+    "phLevel": "pH Reaction",
+    "texture": "Texture Type",
+    "organicMatter": "Organic Carbon",
+    "nitrogen": "Nitrogen Stock",
+    "rain16Days": "16-Day Rainfall Sum",
+    "precipitationTrend": "Rainfall Trend",
+    "currTemp": "Current Temp / Humidity",
+    "cropTitle": "Recommended Crops & Agricultural Advice",
+    "fertilizerTitle": "Fertilizer & Soil Amendment Plan",
+    "irrigationTitle": "Irrigation & Water Management",
+    "riskTitle": "Agronomic Risks & Warnings"
+  },
+  "soil": {
+    "title": "Soil Analysis",
+    "source": "Source: ISRIC SoilGrids (250m resolution)",
+    "errorTitle": "Soil Data Unavailable",
+    "errorMessage": "The soil information service (ISRIC SoilGrids) is currently slow, down, or timed out. Please try again later.",
+    "properties": {
+      "ph": "pH",
+      "organicCarbon": "Organic carbon",
+      "clay": "Clay",
+      "sand": "Sand",
+      "silt": "Silt",
+      "nitrogen": "Nitrogen",
+      "bulkDensity": "Bulk density"
+    },
+    "depth": "Depth",
+    "summary": {
+      "title": "Soil summary",
+      "ph": {
+        "acidic": "Your soil is acidic — consider lime application.",
+        "slightlyAcidic": "Your soil is slightly acidic.",
+        "neutral": "Your soil pH is in the neutral range — good for most crops.",
+        "slightlyAlkaline": "Your soil is slightly alkaline.",
+        "alkaline": "Your soil is alkaline — monitor micronutrient availability."
+      },
+      "texture": {
+        "clay": "Clay-heavy soil — holds water well but may need drainage.",
+        "sandy": "Sandy soil — drains quickly; add organic matter.",
+        "silty": "Silty soil — fertile but can compact when wet.",
+        "clayLoam": "Clay loam — a balanced, productive soil type.",
+        "loamySand": "Loamy sand — easy to work but needs regular irrigation.",
+        "loam": "Loam — an ideal balance of sand, silt, and clay."
+      },
+      "organic": {
+        "low": "Organic matter is low — consider compost or green manure.",
+        "moderate": "Organic matter is moderate.",
+        "high": "Organic matter is good — supports soil health."
+      }
+    }
+  },
+  "weather": {
+    "title": "Weather",
+    "source": "Source: Open-Meteo",
+    "errorTitle": "Weather Data Unavailable",
+    "errorMessage": "The weather information service (Open-Meteo) is currently down or timed out. Please try again later.",
+    "current": "Current conditions",
+    "temperature": "Temperature",
+    "humidity": "Humidity",
+    "precipitation": "Precipitation",
+    "windSpeed": "Wind speed",
+    "forecast": "16-day forecast",
+    "historical": "Rainfall (last 6 months)",
+    "date": "Date",
+    "tempMax": "Max",
+    "tempMin": "Min",
+    "rainfall": "Rainfall",
+    "month": "Month",
+    "units": {
+      "celsius": "°C",
+      "percent": "%",
+      "mm": "mm",
+      "kmh": "km/h"
+    },
+    "summary": {
+      "clear": "Clear skies at your farm location.",
+      "mainlyClear": "Mostly clear conditions.",
+      "partlyCloudy": "Partly cloudy.",
+      "overcast": "Overcast skies.",
+      "foggy": "Foggy conditions.",
+      "drizzle": "Light drizzle expected.",
+      "rain": "Rain expected.",
+      "heavyRain": "Heavy rain expected.",
+      "showers": "Rain showers possible.",
+      "thunderstorm": "Thunderstorms possible."
+    }
+  },
+  "satellite": {
+    "title": "Satellite Imagery",
+    "source": "Source: Esri World Imagery / NASA GIBS / Copernicus",
+    "errorTitle": "Satellite Imagery Unavailable",
+    "errorMessage": "The satellite configuration service is currently down or timed out. Please try again later.",
+    "captureDate": "Image date",
+    "selectLayer": "Select layer",
+    "layers": {
+      "modisTrueColor": "MODIS True Color (NASA)",
+      "modisNdvi": "MODIS NDVI — vegetation index",
+      "esriImagery": "Esri World Imagery"
+    },
+    "ndviHint": "Greener areas indicate healthier vegetation.",
+    "enhancedNote": "Higher-resolution Sentinel imagery provided via Copernicus Sentinel data."
+  },
+  "common": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "error": "Something went wrong"
+  }
+}

@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    @apply h-full;
+  }
+
+  body {
+    @apply bg-earth-50 text-earth-900 antialiased;
+  }
+}
+
+.leaflet-pm-toolbar {
+  z-index: 1000 !important;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 900 !important;
+}
+
+.leaflet-container {
+  font-family: inherit;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+}
+
+.print-only {
+  display: none;
+}
