@@ -3,7 +3,6 @@ import { useFarmStore, type ReportTab } from '../store/farmStore';
 import { OverallAssessmentTab } from './tabs/OverallAssessmentTab';
 import { WeatherTab } from './tabs/WeatherTab';
 import { SatelliteTab } from './tabs/SatelliteTab';
-import { PdfExportButton } from './PdfExportButton';
 import { formatNumber } from '../utils/geo';
 
 const TABS: ReportTab[] = ['assessment', 'weather', 'satellite'];
@@ -68,7 +67,6 @@ export function FarmReport() {
           </p>
         </div>
         <div className="no-print flex flex-col gap-2 sm:items-end">
-          <PdfExportButton />
           <button
             type="button"
             onClick={resetReport}
