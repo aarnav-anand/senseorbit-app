@@ -11,7 +11,7 @@ export interface FarmBoundary {
   isValid: boolean;
 }
 
-export type ReportTab = 'assessment' | 'soil' | 'weather' | 'satellite';
+export type ReportTab = 'assessment' | 'weather' | 'satellite';
 
 const STORAGE_KEY = 'senseorbit_farmer_session';
 
@@ -45,6 +45,7 @@ interface FarmState {
   isLoadingReport: boolean;
   reportError: string | null;
   creditExhaustedMessage: string | null;
+  waterBodyError: string | null;
 
   weather: WeatherResponse | null;
   soil: SoilResponse | null;
@@ -72,6 +73,7 @@ interface FarmState {
   setLoadingReport: (loading: boolean) => void;
   setReportError: (error: string | null) => void;
   setCreditExhaustedMessage: (msg: string | null) => void;
+  setWaterBodyError: (msg: string | null) => void;
   resetReport: () => void;
 }
 
@@ -84,6 +86,7 @@ export const useFarmStore = create<FarmState>((set) => ({
   isLoadingReport: false,
   reportError: null,
   creditExhaustedMessage: null,
+  waterBodyError: null,
 
   weather: null,
   soil: null,
@@ -107,6 +110,7 @@ export const useFarmStore = create<FarmState>((set) => ({
       soil: null,
       satellite: null,
       creditExhaustedMessage: null,
+      waterBodyError: null,
     });
   },
 
@@ -118,7 +122,7 @@ export const useFarmStore = create<FarmState>((set) => ({
       return { farmer: updated };
     }),
 
-  setBoundary: (boundary) => set({ boundary }),
+  setBoundary: (boundary) => set({ boundary, waterBodyError: null }),
   setLocationName: (locationName) => set({ locationName }),
   setShowReport: (showReport) => set({ showReport }),
   setActiveTab: (activeTab) => set({ activeTab }),
@@ -136,6 +140,7 @@ export const useFarmStore = create<FarmState>((set) => ({
   setLoadingReport: (isLoadingReport) => set({ isLoadingReport }),
   setReportError: (reportError) => set({ reportError }),
   setCreditExhaustedMessage: (creditExhaustedMessage) => set({ creditExhaustedMessage }),
+  setWaterBodyError: (waterBodyError) => set({ waterBodyError }),
   resetReport: () =>
     set({
       showReport: false,
@@ -148,5 +153,6 @@ export const useFarmStore = create<FarmState>((set) => ({
       reportError: null,
       isLoadingReport: false,
       creditExhaustedMessage: null,
+      waterBodyError: null,
     }),
 }));

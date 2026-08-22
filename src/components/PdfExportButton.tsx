@@ -2,13 +2,10 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { useFarmStore } from '../store/farmStore';
 
 export function PdfExportButton() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [isExporting, setIsExporting] = useState(false);
-  const [shareMessage, setShareMessage] = useState<string | null>(null);
-  const boundary = useFarmStore((s) => s.boundary);
 
   const handleDownloadPdf = useCallback(async () => {
     const el = document.getElementById('farm-report-content');
@@ -47,41 +44,16 @@ export function PdfExportButton() {
     }
   }, []);
 
-  const handleShare = useCallback(async () => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('lang', i18n.language.startsWith('hi') ? 'hi' : 'en');
-    if (boundary?.centroid) {
-      url.searchParams.set('lat', String(boundary.centroid[0]));
-      url.searchParams.set('lon', String(boundary.centroid[1]));
-    }
-
-    try {
-      await navigator.clipboard.writeText(url.toString());
-      setShareMessage(t('report.shareCopied'));
-    } catch {
-      setShareMessage(t('report.shareFailed'));
-    }
-    setTimeout(() => setShareMessage(null), 3000);
-  }, [boundary, i18n.language, t]);
-
   return (
     <div className="flex flex-wrap items-center gap-2">
       <button
         type="button"
         onClick={handleDownloadPdf}
         disabled={isExporting}
-        className="rounded-lg bg-earth-800 px-4 py-2 text-sm font-medium text-white hover:bg-earth-900 disabled:opacity-60"
+        className="rounded-lg bg-earth-800 px-4 py-2 text-sm font-medium text-white hover:bg-earth-900 disabled:opacity-60 shadow-xs"
       >
-        {t('report.downloadPdf')}
+        {isExporting ? t('report.exportingPdf', 'Exporting PDF…') : t('report.downloadPdf')}
       </button>
-      <button
-        type="button"
-        onClick={handleShare}
-        className="rounded-lg border border-earth-200 px-4 py-2 text-sm font-medium text-earth-800 hover:bg-earth-50"
-      >
-        {t('report.share')}
-      </button>
-      {shareMessage && <span className="text-sm text-field-700">{shareMessage}</span>}
     </div>
   );
 }

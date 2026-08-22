@@ -7,6 +7,11 @@ export interface GeocodeResult {
   type: string;
 }
 
+export interface WaterCheckResult {
+  isWater: boolean;
+  reason?: string;
+}
+
 async function apiGet<T>(path: string, params: Record<string, string>): Promise<T> {
   const url = new URL(path, window.location.origin);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
@@ -40,6 +45,13 @@ export function fetchLocationName(lat: number, lon: number): Promise<string> {
     lat: String(lat),
     lon: String(lon),
   }).then((r) => r.name);
+}
+
+export function fetchWaterCheck(lat: number, lon: number): Promise<WaterCheckResult> {
+  return apiGet<WaterCheckResult>('/api/check-water', {
+    lat: String(lat),
+    lon: String(lon),
+  }).catch(() => ({ isWater: false }));
 }
 
 export async function fetchFullReport(lat: number, lon: number) {

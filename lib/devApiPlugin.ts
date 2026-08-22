@@ -2,7 +2,7 @@ import type { Plugin } from 'vite';
 import { fetchWeather } from './weather.js';
 import { fetchSoil } from './soil.js';
 import { fetchSatellite } from './satellite.js';
-import { fetchGeocode, fetchReverseGeocode } from './geocode.js';
+import { fetchGeocode, fetchReverseGeocode, checkWaterBody } from './geocode.js';
 
 function parseQuery(url: string): URLSearchParams {
   const idx = url.indexOf('?');
@@ -61,6 +61,15 @@ async function handleApiRoute(
         return sendJson(res, 400, { error: 'lat and lon are required' });
       }
       return sendJson(res, 200, { name: await fetchReverseGeocode(lat, lon) });
+    }
+
+    if (pathname === '/api/check-water') {
+      const lat = parseFloat(query.get('lat') ?? '');
+      const lon = parseFloat(query.get('lon') ?? '');
+      if (Number.isNaN(lat) || Number.isNaN(lon)) {
+        return sendJson(res, 400, { error: 'lat and lon are required' });
+      }
+      return sendJson(res, 200, await checkWaterBody(lat, lon));
     }
 
     sendJson(res, 404, { error: 'Not found' });

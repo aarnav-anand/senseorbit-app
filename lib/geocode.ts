@@ -7,6 +7,11 @@ export interface GeocodeResult {
   type: string;
 }
 
+export interface WaterCheckResult {
+  isWater: boolean;
+  reason?: string;
+}
+
 export async function fetchGeocode(query: string): Promise<GeocodeResult[]> {
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) return [];
@@ -71,4 +76,81 @@ export async function fetchReverseGeocode(lat: number, lon: number): Promise<str
   const name = data.display_name ?? `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
   setCache(cacheKey, name, CACHE_TTL.geocode);
   return name;
+}
+
+export async function checkWaterBody(lat: number, lon: number): Promise<WaterCheckResult> {
+  const cacheKey = `water:${lat.toFixed(4)}:${lon.toFixed(4)}`;
+  const cached = getCached<WaterCheckResult>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const geoUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=14`;
+    const elevUrl = `https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`;
+
+    const [geoRes, elevRes] = await Promise.all([
+      fetch(geoUrl, {
+        headers: {
+          'User-Agent': 'SenseOrbit/1.0 (farm boundary mapping app)',
+          Accept: 'application/json',
+        },
+      }).catch(() => null),
+      fetch(elevUrl).catch(() => null),
+    ]);
+
+    let isWater = false;
+    let reason = '';
+
+    if (geoRes && geoRes.ok) {
+      const geoData = await geoRes.json();
+      const displayName = (geoData?.display_name || '').toLowerCase();
+      const addressType = geoData?.addresstype || '';
+      const cls = geoData?.class || '';
+      const type = geoData?.type || '';
+
+      const waterKeywords = [
+        'sea',
+        'ocean',
+        'bay',
+        'gulf',
+        'lake',
+        'river',
+        'reservoir',
+        'waterbody',
+        'dam',
+        'strait',
+        'creek',
+        'estuary',
+        'lagoon',
+      ];
+      const isWaterKeyword = waterKeywords.some((kw) =>
+        new RegExp(`\\b${kw}\\b`, 'i').test(displayName),
+      );
+
+      const isWaterClass =
+        cls === 'waterway' ||
+        (cls === 'natural' && ['water', 'bay', 'sea', 'ocean', 'coastline', 'wetland'].includes(type));
+      const isCountryOnly = addressType === 'country' || addressType === 'continent';
+
+      let elevation: number | null = null;
+      if (elevRes && elevRes.ok) {
+        const elevData = await elevRes.json();
+        elevation = elevData?.elevation?.[0] ?? null;
+      }
+
+      if (isWaterClass || isWaterKeyword) {
+        isWater = true;
+        reason = 'Boundary is over a mapped water body (lake, river, bay, or sea).';
+      } else if (elevation === 0 && isCountryOnly) {
+        isWater = true;
+        reason = 'Boundary is over an ocean or open sea water area.';
+      }
+    }
+
+    const result: WaterCheckResult = { isWater, reason };
+    setCache(cacheKey, result, CACHE_TTL.geocode);
+    return result;
+  } catch (err) {
+    console.error('Error checking water body:', err);
+    return { isWater: false };
+  }
 }

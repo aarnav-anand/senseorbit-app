@@ -41,6 +41,7 @@
     "noPolygon": "Draw a farm boundary on the map first.",
     "polygonTooSmall": "The drawn area is too small. Please draw a larger boundary.",
     "generatingReport": "Generating report…",
+    "waterBodyRejected": "The drawn boundary is over a water body (ocean, lake, or river). Please redraw your farm boundary over agricultural land. No credits were deducted.",
     "basemap": {
       "street": "Street map",
       "satellite": "Satellite (Esri World Imagery)"
@@ -52,7 +53,6 @@
     "generatedAt": "Generated",
     "tabs": {
       "assessment": "Overall Assessment",
-      "soil": "Soil",
       "weather": "Weather",
       "satellite": "Satellite"
     },
@@ -60,9 +60,7 @@
     "error": "Could not load report data. Please try again.",
     "retry": "Retry",
     "downloadPdf": "Download PDF",
-    "share": "Share link",
-    "shareCopied": "Link copied!",
-    "shareFailed": "Could not copy link.",
+    "exportingPdf": "Exporting PDF…",
     "backToMap": "Back to map"
   },
   "assessment": {
@@ -84,42 +82,7 @@
   },
   "soil": {
     "title": "Soil Analysis",
-    "source": "Source: ISRIC SoilGrids (250m resolution)",
-    "errorTitle": "Soil Data Unavailable",
-    "errorMessage": "The soil information service (ISRIC SoilGrids) is currently slow, down, or timed out. Please try again later.",
-    "properties": {
-      "ph": "pH",
-      "organicCarbon": "Organic carbon",
-      "clay": "Clay",
-      "sand": "Sand",
-      "silt": "Silt",
-      "nitrogen": "Nitrogen",
-      "bulkDensity": "Bulk density"
-    },
-    "depth": "Depth",
-    "summary": {
-      "title": "Soil summary",
-      "ph": {
-        "acidic": "Your soil is acidic — consider lime application.",
-        "slightlyAcidic": "Your soil is slightly acidic.",
-        "neutral": "Your soil pH is in the neutral range — good for most crops.",
-        "slightlyAlkaline": "Your soil is slightly alkaline.",
-        "alkaline": "Your soil is alkaline — monitor micronutrient availability."
-      },
-      "texture": {
-        "clay": "Clay-heavy soil — holds water well but may need drainage.",
-        "sandy": "Sandy soil — drains quickly; add organic matter.",
-        "silty": "Silty soil — fertile but can compact when wet.",
-        "clayLoam": "Clay loam — a balanced, productive soil type.",
-        "loamySand": "Loamy sand — easy to work but needs regular irrigation.",
-        "loam": "Loam — an ideal balance of sand, silt, and clay."
-      },
-      "organic": {
-        "low": "Organic matter is low — consider compost or green manure.",
-        "moderate": "Organic matter is moderate.",
-        "high": "Organic matter is good — supports soil health."
-      }
-    }
+    "source": "Source: ISRIC SoilGrids (250m resolution)"
   },
   "weather": {
     "title": "Weather",

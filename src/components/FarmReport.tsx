@@ -1,13 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { useFarmStore, type ReportTab } from '../store/farmStore';
 import { OverallAssessmentTab } from './tabs/OverallAssessmentTab';
-import { SoilTab } from './tabs/SoilTab';
 import { WeatherTab } from './tabs/WeatherTab';
 import { SatelliteTab } from './tabs/SatelliteTab';
 import { PdfExportButton } from './PdfExportButton';
 import { formatNumber } from '../utils/geo';
 
-const TABS: ReportTab[] = ['assessment', 'soil', 'weather', 'satellite'];
+const TABS: ReportTab[] = ['assessment', 'weather', 'satellite'];
 
 export function FarmReport() {
   const { t, i18n } = useTranslation();
@@ -19,10 +18,8 @@ export function FarmReport() {
   const isLoading = useFarmStore((s) => s.isLoadingReport);
   const error = useFarmStore((s) => s.reportError);
   const weather = useFarmStore((s) => s.weather);
-  const soil = useFarmStore((s) => s.soil);
   const satellite = useFarmStore((s) => s.satellite);
   const weatherError = useFarmStore((s) => s.weatherError);
-  const soilError = useFarmStore((s) => s.soilError);
   const satelliteError = useFarmStore((s) => s.satelliteError);
   const resetReport = useFarmStore((s) => s.resetReport);
 
@@ -70,7 +67,7 @@ export function FarmReport() {
             {boundary.centroid[0].toFixed(4)}, {boundary.centroid[1].toFixed(4)}
           </p>
         </div>
-        <div className="no-print flex flex-col gap-2">
+        <div className="no-print flex flex-col gap-2 sm:items-end">
           <PdfExportButton />
           <button
             type="button"
@@ -101,7 +98,6 @@ export function FarmReport() {
 
       <div className="rounded-xl border border-earth-200 bg-white p-4 sm:p-6 shadow-xs">
         {activeTab === 'assessment' && <OverallAssessmentTab />}
-        {activeTab === 'soil' && <SoilTab data={soil} error={soilError} />}
         {activeTab === 'weather' && <WeatherTab data={weather} error={weatherError} />}
         {activeTab === 'satellite' && <SatelliteTab data={satellite} error={satelliteError} />}
       </div>
@@ -110,15 +106,11 @@ export function FarmReport() {
         Imagery from Esri, other data from OpenStreetMap contributors · Contains modified Copernicus Sentinel data · Soil data © ISRIC SoilGrids · Weather data © Open-Meteo
       </div>
 
-      {/* Print view: show all tabs stacked */}
+      {/* Print view: show tabs stacked */}
       <div className="print-only space-y-8">
         <div>
           <h3 className="mb-4 text-lg font-bold">{t('report.tabs.assessment', 'Overall Assessment')}</h3>
           <OverallAssessmentTab />
-        </div>
-        <div>
-          <h3 className="mb-4 text-lg font-bold">{t('report.tabs.soil')}</h3>
-          <SoilTab data={soil} error={soilError} />
         </div>
         <div>
           <h3 className="mb-4 text-lg font-bold">{t('report.tabs.weather')}</h3>
