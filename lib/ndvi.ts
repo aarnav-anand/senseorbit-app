@@ -21,266 +21,263 @@ export interface NdviResponse {
   error?: string;
 }
 
-const AGRO_BASE = 'https://api.agromonitoring.com/agro/1.0';
+// ---------------------------------------------------------------------------
+// CDSE Sentinel Hub endpoints
+// ---------------------------------------------------------------------------
+const CDSE_TOKEN_URL =
+  'https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token';
+const CDSE_STATS_URL = 'https://sh.dataspace.copernicus.eu/api/v1/statistics';
 
-// Agromonitoring polygon area constraints (in hectares)
-const AGRO_MIN_HA = 1;
-const AGRO_MAX_HA = 3000;
+// NDVI evalscript: computes (B08-B04)/(B08+B04), excludes water (SCL=6) and
+// invalid pixels so the mean reflects only valid vegetated/non-water land.
+const NDVI_EVALSCRIPT = `//VERSION=3
+function setup() {
+  return {
+    input: [{ bands: ["B04", "B08", "SCL", "dataMask"] }],
+    output: [
+      { id: "data", bands: 1, sampleType: "FLOAT32" },
+      { id: "dataMask", bands: 1 }
+    ]
+  };
+}
+function evaluatePixel(samples) {
+  var ndvi = (samples.B08 - samples.B04) / (samples.B08 + samples.B04);
+  var validMask = 1;
+  if (samples.B08 + samples.B04 === 0) validMask = 0;
+  if (samples.SCL === 6) validMask = 0; // exclude water
+  return {
+    data: [ndvi],
+    dataMask: [samples.dataMask * validMask]
+  };
+}`;
 
 function toIsoDate(unixTs: number): string {
   return new Date(unixTs * 1000).toISOString().slice(0, 10);
 }
 
-/**
- * Calculates the approximate area of a GeoJSON polygon ring in hectares
- * using the Shoelace formula with degree-to-meter conversion at the given latitude.
- */
-function ringAreaHectares(ring: number[][], centerLat: number): number {
-  // 1 degree latitude ≈ 111,320 m; 1 degree longitude ≈ 111,320 * cos(lat) m
-  const latM = 111320;
-  const lonM = 111320 * Math.cos((centerLat * Math.PI) / 180);
-
-  let area = 0;
-  for (let i = 0; i < ring.length - 1; i++) {
-    const x1 = ring[i][0] * lonM;
-    const y1 = ring[i][1] * latM;
-    const x2 = ring[i + 1][0] * lonM;
-    const y2 = ring[i + 1][1] * latM;
-    area += x1 * y2 - x2 * y1;
-  }
-  return Math.abs(area / 2) / 10_000; // m² → ha
+function toIsoDateTime(unixTs: number): string {
+  return new Date(unixTs * 1000).toISOString();
 }
 
-/**
- * Clamps a polygon to a ~100 ha bounding box centred on (lat, lon) when it is
- * outside Agromonitoring's 1–3000 ha window, so we can still fetch NDVI data.
- */
-function clampPolygonToAgroLimits(geometry: Polygon, lat: number, lon: number): Polygon {
-  const outerRing = geometry.coordinates[0];
-  const ha = ringAreaHectares(outerRing, lat);
+// ---------------------------------------------------------------------------
+// OAuth2 client-credentials token (cached in-process for the token lifetime)
+// ---------------------------------------------------------------------------
+let _tokenCache: { token: string; expiresAt: number } | null = null;
 
-  if (ha >= AGRO_MIN_HA && ha <= AGRO_MAX_HA) {
-    return geometry; // Already within limits — return as-is
+async function getCdseToken(clientId: string, clientSecret: string): Promise<string> {
+  const now = Date.now();
+  if (_tokenCache && _tokenCache.expiresAt > now + 30_000) {
+    return _tokenCache.token;
   }
 
-  // Target ~100 ha square: side ≈ sqrt(100 * 10000) = 1000 m
-  const targetHa = 100;
-  const sideM = Math.sqrt(targetHa * 10_000);
-  const dLat = sideM / 111320;
-  const dLon = sideM / (111320 * Math.cos((lat * Math.PI) / 180));
-
-  const clampedRing: number[][] = [
-    [lon - dLon, lat - dLat],
-    [lon + dLon, lat - dLat],
-    [lon + dLon, lat + dLat],
-    [lon - dLon, lat + dLat],
-    [lon - dLon, lat - dLat], // close the ring
-  ];
-
-  return { type: 'Polygon', coordinates: [clampedRing] };
-}
-
-// Helper to normalize coordinates to [lon, lat] and ensure closed rings
-// Helper to calculate signed area to detect winding order
-function getSignedArea(ring: number[][]): number {
-  let area = 0;
-  for (let i = 0; i < ring.length - 1; i++) {
-    const [x1, y1] = ring[i];
-    const [x2, y2] = ring[i + 1];
-    area += (x2 - x1) * (y2 + y1);
-  }
-  return area;
-}
-
-function normalizeGeometry(geometry: Polygon, refLat: number, refLon: number): Polygon {
-  if (!geometry || !geometry.coordinates || !geometry.coordinates.length) {
-    return geometry;
-  }
-
-  const rings = geometry.coordinates.map((ring) => {
-    // 1. Check if first point matches refLat/refLon order to auto-detect swap requirement
-    const [p1, p2] = ring[0];
-    const distNormal = Math.hypot(p1 - refLon, p2 - refLat); // assumes [lon, lat]
-    const distSwapped = Math.hypot(p1 - refLat, p2 - refLon); // assumes [lat, lon]
-
-    let normalizedRing = ring.map((coord) => {
-      if (distSwapped < distNormal) {
-        return [coord[1], coord[0]]; // Swap [lat, lon] -> [lon, lat]
-      }
-      return [coord[0], coord[1]]; // Already [lon, lat]
-    });
-
-    // 2. Ensure closure (first point === last point)
-    const firstPt = normalizedRing[0];
-    const lastPt = normalizedRing[normalizedRing.length - 1];
-    if (firstPt[0] !== lastPt[0] || firstPt[1] !== lastPt[1]) {
-      normalizedRing.push([firstPt[0], firstPt[1]]);
-    }
-
-    // 3. Fix Winding Order: GeoJSON outer ring MUST be Counter-Clockwise (Signed Area < 0)
-    // If signed area > 0 (Clockwise), reverse the ring to avoid inverted globe calculations
-    if (getSignedArea(normalizedRing) > 0) {
-      normalizedRing.reverse();
-    }
-
-    return normalizedRing;
+  const body = new URLSearchParams({
+    grant_type: 'client_credentials',
+    client_id: clientId,
+    client_secret: clientSecret,
   });
 
-  return {
-    type: 'Polygon',
-    coordinates: rings,
+  const res = await fetch(CDSE_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.status.toString());
+    throw new Error(`CDSE auth failed: ${text}`);
+  }
+
+  const json: { access_token: string; expires_in: number } = await res.json();
+  _tokenCache = {
+    token: json.access_token,
+    expiresAt: now + json.expires_in * 1000,
+  };
+  return _tokenCache.token;
+}
+
+// ---------------------------------------------------------------------------
+// Compute bbox from a GeoJSON polygon for the CDSE bounds object
+// ---------------------------------------------------------------------------
+function polygonBbox(geometry: Polygon): [number, number, number, number] {
+  const coords = geometry.coordinates[0];
+  let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
+  for (const [lon, lat] of coords) {
+    if (lon < minLon) minLon = lon;
+    if (lat < minLat) minLat = lat;
+    if (lon > maxLon) maxLon = lon;
+    if (lat > maxLat) maxLat = lat;
+  }
+  return [minLon, minLat, maxLon, maxLat];
+}
+
+// ---------------------------------------------------------------------------
+// Parse the CDSE Statistical API response into our NdviStats[]
+// Response shape (per interval):
+//   { interval: { from, to }, outputs: { data: { bands: { B0: { stats: { mean, stDev, min, max, sampleCount, noDataCount } } } } } }
+// ---------------------------------------------------------------------------
+interface CdseInterval {
+  interval: { from: string; to: string };
+  outputs?: {
+    data?: {
+      bands?: {
+        B0?: {
+          stats?: {
+            mean?: number;
+            stDev?: number;
+            min?: number;
+            max?: number;
+            sampleCount?: number;
+            noDataCount?: number;
+            percentiles?: Record<string, number>;
+          };
+        };
+      };
+    };
   };
 }
 
-async function upsertPolygon(
-  boundary: Feature<Polygon>,
-  lat: number,
-  lon: number,
-  apiKey: string,
-): Promise<string> {
-  const name = `senseorbit_${lat.toFixed(4)}_${lon.toFixed(4)}`;
+function parseCdseResponse(intervals: CdseInterval[]): NdviStats[] {
+  const result: NdviStats[] = [];
+  for (const entry of intervals) {
+    const stats = entry.outputs?.data?.bands?.B0?.stats;
+    if (!stats || typeof stats.mean !== 'number') continue;
+    // Skip intervals where ALL pixels were masked (noDataCount === sampleCount)
+    if (stats.sampleCount === 0 || stats.sampleCount === stats.noDataCount) continue;
 
-  const listRes = await fetch(`${AGRO_BASE}/polygons?appid=${apiKey}`);
-  if (listRes.ok) {
-    const polygons: Array<{ id: string; name: string }> = await listRes.json();
-    const existing = polygons.find((p) => p.name === name);
-    if (existing) return existing.id;
+    const pct = stats.percentiles ?? {};
+    const p25 = pct['25.0'] ?? pct['25'] ?? stats.min ?? 0;
+    const p75 = pct['75.0'] ?? pct['75'] ?? stats.max ?? 0;
+    const median = pct['50.0'] ?? pct['50'] ?? stats.mean;
+
+    const dt = Math.floor(new Date(entry.interval.from).getTime() / 1000);
+    result.push({
+      mean: Math.round(stats.mean * 1000) / 1000,
+      std: Math.round((stats.stDev ?? 0) * 1000) / 1000,
+      min: Math.round((stats.min ?? 0) * 1000) / 1000,
+      max: Math.round((stats.max ?? 0) * 1000) / 1000,
+      median: Math.round(median * 1000) / 1000,
+      p25: Math.round(p25 * 1000) / 1000,
+      p75: Math.round(p75 * 1000) / 1000,
+      num: (stats.sampleCount ?? 0) - (stats.noDataCount ?? 0),
+      date: dt,
+    });
   }
-
-  const clampedGeo = clampPolygonToAgroLimits(boundary.geometry, lat, lon);
-  const normalizedGeo = normalizeGeometry(clampedGeo, lat, lon);
-
-  const createRes = await fetch(`${AGRO_BASE}/polygons?appid=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name,
-      geo_json: {
-        type: 'Feature',
-        properties: {},
-        geometry: normalizedGeo,
-      },
-    }),
-  });
-
-  if (!createRes.ok) {
-    const err = await createRes.json().catch(() => ({}));
-    const errMsg: string = err.message ?? '';
-
-    // Agromonitoring returns a 400 with the existing polygon ID when the geometry
-    // is a duplicate. Extract that ID and reuse it rather than failing.
-    // Example message: "Your polygon is duplicated your already existed polygon '6a8cf3a3fc4d16fabfb94c6b'."
-    const duplicateMatch = errMsg.match(/already existed polygon\s+'([a-f0-9]+)'/i);
-    if (duplicateMatch) {
-      return duplicateMatch[1];
-    }
-
-    // If the duplicate message doesn't contain an ID, retry with the duplicated=true flag.
-    if (/duplicat/i.test(errMsg)) {
-      const retryRes = await fetch(`${AGRO_BASE}/polygons?appid=${apiKey}&duplicated=true`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          geo_json: {
-            type: 'Feature',
-            properties: {},
-            geometry: normalizedGeo,
-          },
-        }),
-      });
-
-      if (retryRes.ok) {
-        const retried: { id: string } = await retryRes.json();
-        return retried.id;
-      }
-
-      const retryErr = await retryRes.json().catch(() => ({}));
-      throw new Error(`Agromonitoring polygon creation failed: ${retryErr.message ?? retryRes.status}`);
-    }
-
-    throw new Error(`Agromonitoring polygon creation failed: ${errMsg || createRes.status}`);
-  }
-
-  const created: { id: string } = await createRes.json();
-  return created.id;
+  return result;
 }
 
+// ---------------------------------------------------------------------------
+// Main export
+// ---------------------------------------------------------------------------
 export async function fetchNdvi(
   lat: number,
   lon: number,
   boundary: Feature<Polygon>,
-  apiKey: string,
+  clientId: string,
+  clientSecret: string,
 ): Promise<NdviResponse> {
-  const cacheKey = `ndvi:${lat.toFixed(4)}:${lon.toFixed(4)}`;
+  const cacheKey = `ndvi_cdse:${lat.toFixed(4)}:${lon.toFixed(4)}`;
   const cached = getCached<NdviResponse>(cacheKey);
   if (cached) return cached;
 
   const now = Math.floor(Date.now() / 1000);
 
-  let polygonId: string | null = null;
-
+  // Obtain OAuth2 access token
+  let token: string;
   try {
-    polygonId = await upsertPolygon(boundary, lat, lon, apiKey);
+    token = await getCdseToken(clientId, clientSecret);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { current: null, history: [], polygonId: null, captureDate: toIsoDate(now), error: msg };
   }
 
-  // Try progressively wider date windows: 90 days -> 180 days -> 365 days.
-  // A 404 or empty array from Agromonitoring means no imagery for that window
-  // (e.g. cloud cover), NOT a hard API failure.
+  const bbox = polygonBbox(boundary.geometry);
+
+  // Try progressively wider date windows: 90d → 180d → 365d
+  // Use 30-day aggregation intervals with percentiles to match what the UI expects.
   const WINDOWS_DAYS = [90, 180, 365];
-  let raw: Array<{
-    dt: number;
-    data: { mean: number; std: number; min: number; max: number; median: number; p25: number; p75: number; num: number };
-  }> = [];
+  let history: NdviStats[] = [];
 
   for (const days of WINDOWS_DAYS) {
-    const start = now - days * 24 * 60 * 60;
-    const statsUrl =
-      `${AGRO_BASE}/ndvi/statistics?polyid=${polygonId}&appid=${apiKey}` +
-      `&datestart=${start}&dateend=${now}`;
+    const fromTs = now - days * 24 * 60 * 60;
+    const fromStr = toIsoDateTime(fromTs);
+    const toStr = toIsoDateTime(now);
 
-    const statsRes = await fetch(statsUrl);
+    const statsRequest = {
+      input: {
+        bounds: {
+          bbox,
+          properties: { crs: 'http://www.opengis.net/def/crs/EPSG/0/4326' },
+        },
+        data: [
+          {
+            type: 'sentinel-2-l2a',
+            dataFilter: { mosaickingOrder: 'leastCC' },
+          },
+        ],
+      },
+      aggregation: {
+        timeRange: { from: fromStr, to: toStr },
+        aggregationInterval: { of: 'P30D' },
+        evalscript: NDVI_EVALSCRIPT,
+        resx: 10,
+        resy: 10,
+      },
+      calculations: {
+        default: {
+          statistics: {
+            default: {
+              percentiles: { k: [25, 50, 75] },
+            },
+          },
+        },
+      },
+    };
 
-    // 404 = no data for this window; widen and retry
-    if (statsRes.status === 404) continue;
+    let res: Response;
+    try {
+      res = await fetch(CDSE_STATS_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(statsRequest),
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return { current: null, history: [], polygonId: null, captureDate: toIsoDate(now), error: `CDSE request failed: ${msg}` };
+    }
 
-    if (!statsRes.ok) {
-      const err = await statsRes.json().catch(() => ({}));
+    if (!res.ok) {
+      // 4xx on the stats endpoint means no data or bad request — try wider window
+      if (res.status >= 400 && res.status < 500) continue;
+      const errText = await res.text().catch(() => res.status.toString());
       return {
         current: null,
         history: [],
-        polygonId,
+        polygonId: null,
         captureDate: toIsoDate(now),
-        error: `NDVI stats error: ${err.message ?? statsRes.status}`,
+        error: `CDSE stats error ${res.status}: ${errText}`,
       };
     }
 
-    raw = await statsRes.json();
-    // Empty array = no usable imagery in this window; try wider
-    if (raw.length > 0) break;
+    const body: { data?: CdseInterval[]; status?: string } = await res.json();
+    const intervals = body.data ?? [];
+    history = parseCdseResponse(intervals);
+    if (history.length > 0) break;
   }
-
-  const history: NdviStats[] = raw
-    .filter((r) => r.data && typeof r.data.mean === 'number')
-    .map((r) => ({
-      mean: Math.round(r.data.mean * 1000) / 1000,
-      std: Math.round(r.data.std * 1000) / 1000,
-      min: Math.round(r.data.min * 1000) / 1000,
-      max: Math.round(r.data.max * 1000) / 1000,
-      median: Math.round(r.data.median * 1000) / 1000,
-      p25: Math.round((r.data.p25 ?? r.data.min) * 1000) / 1000,
-      p75: Math.round((r.data.p75 ?? r.data.max) * 1000) / 1000,
-      num: r.data.num ?? 0,
-      date: r.dt,
-    }));
 
   const current = history.length > 0 ? history[history.length - 1] : null;
   const captureDate = current ? toIsoDate(current.date) : toIsoDate(now);
 
-  const result: NdviResponse = { current, history, polygonId, captureDate };
+  const result: NdviResponse = {
+    current,
+    history,
+    polygonId: null, // CDSE doesn't use polygon IDs
+    captureDate,
+  };
+
   setCache(cacheKey, result, CACHE_TTL.satellite);
   return result;
 }
