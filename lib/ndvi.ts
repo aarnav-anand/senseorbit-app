@@ -165,7 +165,41 @@ async function upsertPolygon(
 
   if (!createRes.ok) {
     const err = await createRes.json().catch(() => ({}));
-    throw new Error(`Agromonitoring polygon creation failed: ${err.message ?? createRes.status}`);
+    const errMsg: string = err.message ?? '';
+
+    // Agromonitoring returns a 400 with the existing polygon ID when the geometry
+    // is a duplicate. Extract that ID and reuse it rather than failing.
+    // Example message: "Your polygon is duplicated your already existed polygon '6a8cf3a3fc4d16fabfb94c6b'."
+    const duplicateMatch = errMsg.match(/already existed polygon\s+'([a-f0-9]+)'/i);
+    if (duplicateMatch) {
+      return duplicateMatch[1];
+    }
+
+    // If the duplicate message doesn't contain an ID, retry with the duplicated=true flag.
+    if (/duplicat/i.test(errMsg)) {
+      const retryRes = await fetch(`${AGRO_BASE}/polygons?appid=${apiKey}&duplicated=true`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          geo_json: {
+            type: 'Feature',
+            properties: {},
+            geometry: normalizedGeo,
+          },
+        }),
+      });
+
+      if (retryRes.ok) {
+        const retried: { id: string } = await retryRes.json();
+        return retried.id;
+      }
+
+      const retryErr = await retryRes.json().catch(() => ({}));
+      throw new Error(`Agromonitoring polygon creation failed: ${retryErr.message ?? retryRes.status}`);
+    }
+
+    throw new Error(`Agromonitoring polygon creation failed: ${errMsg || createRes.status}`);
   }
 
   const created: { id: string } = await createRes.json();
