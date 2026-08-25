@@ -6,6 +6,10 @@ import type { Feature, Polygon } from 'geojson';
 const HECTARES_PER_SQM = 1 / 10_000;
 const ACRES_PER_HECTARE = 2.47105;
 const MIN_AREA_HECTARES = 0.001;
+// Agromonitoring NDVI API accepts polygons up to 3000 ha.
+// Larger polygons are still allowed for the general report, but NDVI will
+// be fetched using a clamped 100 ha box centred on the farm centroid.
+export const NDVI_MAX_AREA_HECTARES = 3000;
 
 export function analyzePolygon(feature: Feature<Polygon>): {
   areaHectares: number;
@@ -14,6 +18,7 @@ export function analyzePolygon(feature: Feature<Polygon>): {
   isValid: boolean;
   hasSelfIntersection: boolean;
   isTooSmall: boolean;
+  exceedsNdviLimit: boolean;
 } {
   const sqMeters = area(feature);
   const areaHectares = sqMeters * HECTARES_PER_SQM;
@@ -23,6 +28,7 @@ export function analyzePolygon(feature: Feature<Polygon>): {
   const kinkResult = kinks(feature);
   const hasSelfIntersection = kinkResult.features.length > 0;
   const isTooSmall = areaHectares < MIN_AREA_HECTARES;
+  const exceedsNdviLimit = areaHectares > NDVI_MAX_AREA_HECTARES;
 
   return {
     areaHectares,
@@ -31,6 +37,7 @@ export function analyzePolygon(feature: Feature<Polygon>): {
     isValid: !hasSelfIntersection && !isTooSmall,
     hasSelfIntersection,
     isTooSmall,
+    exceedsNdviLimit,
   };
 }
 

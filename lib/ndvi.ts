@@ -23,8 +23,61 @@ export interface NdviResponse {
 
 const AGRO_BASE = 'https://api.agromonitoring.com/agro/1.0';
 
+// Agromonitoring polygon area constraints (in hectares)
+const AGRO_MIN_HA = 1;
+const AGRO_MAX_HA = 3000;
+
 function toIsoDate(unixTs: number): string {
   return new Date(unixTs * 1000).toISOString().slice(0, 10);
+}
+
+/**
+ * Calculates the approximate area of a GeoJSON polygon ring in hectares
+ * using the Shoelace formula with degree-to-meter conversion at the given latitude.
+ */
+function ringAreaHectares(ring: number[][], centerLat: number): number {
+  // 1 degree latitude ≈ 111,320 m; 1 degree longitude ≈ 111,320 * cos(lat) m
+  const latM = 111320;
+  const lonM = 111320 * Math.cos((centerLat * Math.PI) / 180);
+
+  let area = 0;
+  for (let i = 0; i < ring.length - 1; i++) {
+    const x1 = ring[i][0] * lonM;
+    const y1 = ring[i][1] * latM;
+    const x2 = ring[i + 1][0] * lonM;
+    const y2 = ring[i + 1][1] * latM;
+    area += x1 * y2 - x2 * y1;
+  }
+  return Math.abs(area / 2) / 10_000; // m² → ha
+}
+
+/**
+ * Clamps a polygon to a ~100 ha bounding box centred on (lat, lon) when it is
+ * outside Agromonitoring's 1–3000 ha window, so we can still fetch NDVI data.
+ */
+function clampPolygonToAgroLimits(geometry: Polygon, lat: number, lon: number): Polygon {
+  const outerRing = geometry.coordinates[0];
+  const ha = ringAreaHectares(outerRing, lat);
+
+  if (ha >= AGRO_MIN_HA && ha <= AGRO_MAX_HA) {
+    return geometry; // Already within limits — return as-is
+  }
+
+  // Target ~100 ha square: side ≈ sqrt(100 * 10000) = 1000 m
+  const targetHa = 100;
+  const sideM = Math.sqrt(targetHa * 10_000);
+  const dLat = sideM / 111320;
+  const dLon = sideM / (111320 * Math.cos((lat * Math.PI) / 180));
+
+  const clampedRing: number[][] = [
+    [lon - dLon, lat - dLat],
+    [lon + dLon, lat - dLat],
+    [lon + dLon, lat + dLat],
+    [lon - dLon, lat + dLat],
+    [lon - dLon, lat - dLat], // close the ring
+  ];
+
+  return { type: 'Polygon', coordinates: [clampedRing] };
 }
 
 // Helper to normalize coordinates to [lon, lat] and ensure closed rings
@@ -94,7 +147,8 @@ async function upsertPolygon(
     if (existing) return existing.id;
   }
 
-  const normalizedGeo = normalizeGeometry(boundary.geometry, lat, lon);
+  const clampedGeo = clampPolygonToAgroLimits(boundary.geometry, lat, lon);
+  const normalizedGeo = normalizeGeometry(clampedGeo, lat, lon);
 
   const createRes = await fetch(`${AGRO_BASE}/polygons?appid=${apiKey}`, {
     method: 'POST',

@@ -246,6 +246,15 @@ export function MapView({ onConfirm }: MapViewProps) {
             </p>
           )}
 
+          {boundary.isValid && analyzePolygon(boundary.polygon).exceedsNdviLimit && (
+            <p className="mt-2 text-sm text-blue-700">
+              {t(
+                'map.ndviAreaClamped',
+                'Your boundary is larger than 3,000 ha. NDVI vegetation data will be sampled from a 100 ha area at the farm centre.',
+              )}
+            </p>
+          )}
+
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
