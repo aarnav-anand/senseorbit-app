@@ -34,14 +34,8 @@ function normalizeGeometry(geometry: Polygon): Polygon {
   }
 
   const rings = geometry.coordinates.map((ring) => {
-    // Force coordinates into explicit [longitude, latitude] pairs.
-    // If your frontend map outputs [lat, lon], we explicitly flip index 0 and 1:
-    let normalizedRing = ring.map((coord) => {
-      // Assuming coord input is [lat, lon] from map drawing tools:
-      const lat = coord[0];
-      const lon = coord[1];
-      return [lon, lat]; // GeoJSON standard: [lon, lat]
-    });
+    // Keep coordinates as-is since frontend already provides [lon, lat]
+    let normalizedRing = ring.map((coord) => [coord[0], coord[1]]);
 
     // Ensure closing vertex (first point === last point)
     const firstPt = normalizedRing[0];
