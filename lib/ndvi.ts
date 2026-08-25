@@ -27,6 +27,33 @@ function toIsoDate(unixTs: number): string {
   return new Date(unixTs * 1000).toISOString().slice(0, 10);
 }
 
+// Helper to normalize coordinates to [lon, lat] and ensure closed rings
+function normalizeGeometry(geometry: Polygon): Polygon {
+  const rings = geometry.coordinates.map((ring) => {
+    let normalizedRing = ring.map((coord) => {
+      // If coordinates are [lat, lon], flip them to [lon, lat]
+      // Latitude ranges -90 to 90, Longitude ranges -180 to 180
+      // Assuming incoming coords from map library are [lat, lon]
+      const [first, second] = coord;
+      return [second, first]; // [lon, lat]
+    });
+
+    // Ensure the polygon ring is closed (first point === last point)
+    const firstPt = normalizedRing[0];
+    const lastPt = normalizedRing[normalizedRing.length - 1];
+    if (firstPt[0] !== lastPt[0] || firstPt[1] !== lastPt[1]) {
+      normalizedRing.push([firstPt[0], firstPt[1]]);
+    }
+
+    return normalizedRing;
+  });
+
+  return {
+    type: 'Polygon',
+    coordinates: rings,
+  };
+}
+
 async function upsertPolygon(
   boundary: Feature<Polygon>,
   lat: number,
@@ -42,6 +69,8 @@ async function upsertPolygon(
     if (existing) return existing.id;
   }
 
+  const normalizedGeo = normalizeGeometry(boundary.geometry);
+
   const createRes = await fetch(`${AGRO_BASE}/polygons?appid=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -50,7 +79,7 @@ async function upsertPolygon(
       geo_json: {
         type: 'Feature',
         properties: {},
-        geometry: boundary.geometry,
+        geometry: normalizedGeo,
       },
     }),
   });
