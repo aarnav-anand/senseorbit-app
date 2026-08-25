@@ -31,11 +31,23 @@ function toIsoDate(unixTs: number): string {
 function normalizeGeometry(geometry: Polygon): Polygon {
   const rings = geometry.coordinates.map((ring) => {
     let normalizedRing = ring.map((coord) => {
-      // If coordinates are [lat, lon], flip them to [lon, lat]
-      // Latitude ranges -90 to 90, Longitude ranges -180 to 180
-      // Assuming incoming coords from map library are [lat, lon]
-      const [first, second] = coord;
-      return [second, first]; // [lon, lat]
+      const [a, b] = coord;
+
+      // Detect if incoming coordinates are [lat, lon] instead of [lon, lat]
+      // Latitude is strictly capped between -90 and 90.
+      // If 'a' is a valid latitude and 'b' is outside latitude limits (or standard map lat/lon format), swap them.
+      let lon = a;
+      let lat = b;
+
+      // If 'a' exceeds normal latitude limits OR if you know your frontend map outputs [lat, lon]
+      // We enforce standard GeoJSON [longitude, latitude] output:
+      if (Math.abs(a) <= 90 && Math.abs(b) > 90) {
+        // 'a' is lat, 'b' is lon -> swap to [lon, lat]
+        lon = b;
+        lat = a;
+      }
+
+      return [lon, lat];
     });
 
     // Ensure the polygon ring is closed (first point === last point)
