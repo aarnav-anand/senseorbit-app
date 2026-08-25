@@ -102,14 +102,21 @@ export async function fetchSoil(lat: number, lon: number): Promise<SoilResponse>
   const cached = getCached<SoilResponse>(cacheKey);
   if (cached) return cached;
 
-  const url = new URL('https://rest.isric.org/soilgrids/v2.0/properties/query');
-  url.searchParams.set('lon', String(lon));
-  url.searchParams.set('lat', String(lat));
-  url.searchParams.set('property', SOILGRIDS_PROPERTIES);
-  url.searchParams.set('depth', DEPTHS);
-  url.searchParams.set('value', 'mean');
+  // SoilGrids requires repeated params: ?property=phh2o&property=ocd&...
+  // Using searchParams.set with a comma-joined string sends a single wrong value.
+  const properties = SOILGRIDS_PROPERTIES.split(',');
+  const depths = DEPTHS.split(',');
+  const qs = [
+    `lon=${lon}`,
+    `lat=${lat}`,
+    ...properties.map((p) => `property=${p}`),
+    ...depths.map((d) => `depth=${d}`),
+    'value=mean',
+  ].join('&');
+  const soilUrl = `https://rest.isric.org/soilgrids/v2.0/properties/query?${qs}`;
 
-  const res = await fetchWithTimeout(url.toString(), 4000);
+  // SoilGrids can take 10-20s; 4s was timing out consistently
+  const res = await fetchWithTimeout(soilUrl, 20000);
 
   if (!res.ok) {
     throw new Error(`SoilGrids API error: ${res.status}`);
