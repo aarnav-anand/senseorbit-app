@@ -29,28 +29,21 @@ function toIsoDate(unixTs: number): string {
 
 // Helper to normalize coordinates to [lon, lat] and ensure closed rings
 function normalizeGeometry(geometry: Polygon): Polygon {
+  if (!geometry || !geometry.coordinates || !geometry.coordinates.length) {
+    return geometry;
+  }
+
   const rings = geometry.coordinates.map((ring) => {
+    // Force coordinates into explicit [longitude, latitude] pairs.
+    // If your frontend map outputs [lat, lon], we explicitly flip index 0 and 1:
     let normalizedRing = ring.map((coord) => {
-      const [a, b] = coord;
-
-      // Detect if incoming coordinates are [lat, lon] instead of [lon, lat]
-      // Latitude is strictly capped between -90 and 90.
-      // If 'a' is a valid latitude and 'b' is outside latitude limits (or standard map lat/lon format), swap them.
-      let lon = a;
-      let lat = b;
-
-      // If 'a' exceeds normal latitude limits OR if you know your frontend map outputs [lat, lon]
-      // We enforce standard GeoJSON [longitude, latitude] output:
-      if (Math.abs(a) <= 90 && Math.abs(b) > 90) {
-        // 'a' is lat, 'b' is lon -> swap to [lon, lat]
-        lon = b;
-        lat = a;
-      }
-
-      return [lon, lat];
+      // Assuming coord input is [lat, lon] from map drawing tools:
+      const lat = coord[0];
+      const lon = coord[1];
+      return [lon, lat]; // GeoJSON standard: [lon, lat]
     });
 
-    // Ensure the polygon ring is closed (first point === last point)
+    // Ensure closing vertex (first point === last point)
     const firstPt = normalizedRing[0];
     const lastPt = normalizedRing[normalizedRing.length - 1];
     if (firstPt[0] !== lastPt[0] || firstPt[1] !== lastPt[1]) {
