@@ -28,20 +28,46 @@ function toIsoDate(unixTs: number): string {
 }
 
 // Helper to normalize coordinates to [lon, lat] and ensure closed rings
-function normalizeGeometry(geometry: Polygon): Polygon {
+// Helper to calculate signed area to detect winding order
+function getSignedArea(ring: number[][]): number {
+  let area = 0;
+  for (let i = 0; i < ring.length - 1; i++) {
+    const [x1, y1] = ring[i];
+    const [x2, y2] = ring[i + 1];
+    area += (x2 - x1) * (y2 + y1);
+  }
+  return area;
+}
+
+function normalizeGeometry(geometry: Polygon, refLat: number, refLon: number): Polygon {
   if (!geometry || !geometry.coordinates || !geometry.coordinates.length) {
     return geometry;
   }
 
   const rings = geometry.coordinates.map((ring) => {
-    // Keep coordinates as-is since frontend already provides [lon, lat]
-    let normalizedRing = ring.map((coord) => [coord[0], coord[1]]);
+    // 1. Check if first point matches refLat/refLon order to auto-detect swap requirement
+    const [p1, p2] = ring[0];
+    const distNormal = Math.hypot(p1 - refLon, p2 - refLat); // assumes [lon, lat]
+    const distSwapped = Math.hypot(p1 - refLat, p2 - refLon); // assumes [lat, lon]
 
-    // Ensure closing vertex (first point === last point)
+    let normalizedRing = ring.map((coord) => {
+      if (distSwapped < distNormal) {
+        return [coord[1], coord[0]]; // Swap [lat, lon] -> [lon, lat]
+      }
+      return [coord[0], coord[1]]; // Already [lon, lat]
+    });
+
+    // 2. Ensure closure (first point === last point)
     const firstPt = normalizedRing[0];
     const lastPt = normalizedRing[normalizedRing.length - 1];
     if (firstPt[0] !== lastPt[0] || firstPt[1] !== lastPt[1]) {
       normalizedRing.push([firstPt[0], firstPt[1]]);
+    }
+
+    // 3. Fix Winding Order: GeoJSON outer ring MUST be Counter-Clockwise (Signed Area < 0)
+    // If signed area > 0 (Clockwise), reverse the ring to avoid inverted globe calculations
+    if (getSignedArea(normalizedRing) > 0) {
+      normalizedRing.reverse();
     }
 
     return normalizedRing;
@@ -68,7 +94,7 @@ async function upsertPolygon(
     if (existing) return existing.id;
   }
 
-  const normalizedGeo = normalizeGeometry(boundary.geometry);
+  const normalizedGeo = normalizeGeometry(boundary.geometry, lat, lon);
 
   const createRes = await fetch(`${AGRO_BASE}/polygons?appid=${apiKey}`, {
     method: 'POST',
