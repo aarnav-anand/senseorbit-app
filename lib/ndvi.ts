@@ -217,7 +217,6 @@ export async function fetchNdvi(
   if (cached) return cached;
 
   const now = Math.floor(Date.now() / 1000);
-  const start = now - 60 * 24 * 60 * 60;
 
   let polygonId: string | null = null;
 
@@ -228,26 +227,41 @@ export async function fetchNdvi(
     return { current: null, history: [], polygonId: null, captureDate: toIsoDate(now), error: msg };
   }
 
-  const statsUrl =
-    `${AGRO_BASE}/ndvi/statistics?polyid=${polygonId}&appid=${apiKey}` +
-    `&datestart=${start}&dateend=${now}`;
-
-  const statsRes = await fetch(statsUrl);
-  if (!statsRes.ok) {
-    const err = await statsRes.json().catch(() => ({}));
-    return {
-      current: null,
-      history: [],
-      polygonId,
-      captureDate: toIsoDate(now),
-      error: `NDVI stats error: ${err.message ?? statsRes.status}`,
-    };
-  }
-
-  const raw: Array<{
+  // Try progressively wider date windows: 90 days -> 180 days -> 365 days.
+  // A 404 or empty array from Agromonitoring means no imagery for that window
+  // (e.g. cloud cover), NOT a hard API failure.
+  const WINDOWS_DAYS = [90, 180, 365];
+  let raw: Array<{
     dt: number;
     data: { mean: number; std: number; min: number; max: number; median: number; p25: number; p75: number; num: number };
-  }> = await statsRes.json();
+  }> = [];
+
+  for (const days of WINDOWS_DAYS) {
+    const start = now - days * 24 * 60 * 60;
+    const statsUrl =
+      `${AGRO_BASE}/ndvi/statistics?polyid=${polygonId}&appid=${apiKey}` +
+      `&datestart=${start}&dateend=${now}`;
+
+    const statsRes = await fetch(statsUrl);
+
+    // 404 = no data for this window; widen and retry
+    if (statsRes.status === 404) continue;
+
+    if (!statsRes.ok) {
+      const err = await statsRes.json().catch(() => ({}));
+      return {
+        current: null,
+        history: [],
+        polygonId,
+        captureDate: toIsoDate(now),
+        error: `NDVI stats error: ${err.message ?? statsRes.status}`,
+      };
+    }
+
+    raw = await statsRes.json();
+    // Empty array = no usable imagery in this window; try wider
+    if (raw.length > 0) break;
+  }
 
   const history: NdviStats[] = raw
     .filter((r) => r.data && typeof r.data.mean === 'number')
