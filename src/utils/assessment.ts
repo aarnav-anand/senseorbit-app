@@ -1,4 +1,4 @@
-import type { SoilResponse, WeatherResponse, SatelliteResponse } from '../types/report';
+import type { SoilResponse, WeatherResponse, SatelliteResponse, NdviResponse } from '../types/report';
 import type { FarmBoundary } from '../store/farmStore';
 
 export interface CropRecommendation {
@@ -17,6 +17,12 @@ export interface OverallAssessment {
   healthScore: number;
   healthStatus: string;
   summary: string;
+  ndviStatus: {
+    value: string;
+    label: string;
+    interpretation: string;
+    trend: string;
+  } | null;
   soilHealth: {
     rating: string;
     phStatus: string;
@@ -41,8 +47,50 @@ export function generateOverallAssessment(
   _satellite: SatelliteResponse | null,
   boundary: FarmBoundary | null,
   locale: string = 'en',
+  ndvi: NdviResponse | null = null,
 ): OverallAssessment {
   const isHi = locale.startsWith('hi');
+
+  // --- NDVI from Agromonitoring ---
+  const ndviMean = ndvi?.current?.mean ?? null;
+
+  let ndviStatus: OverallAssessment['ndviStatus'] = null;
+  if (ndviMean !== null) {
+    let label = '';
+    let interpretation = '';
+    if (ndviMean >= 0.6) {
+      label = isHi ? 'घनी / स्वस्थ वनस्पति' : 'Dense / Healthy Vegetation';
+      interpretation = isHi
+        ? 'उत्कृष्ट फसल आवरण। मजबूत प्रकाश संश्लेषण और उच्च बायोमास का संकेत।'
+        : 'Excellent crop cover. Indicates strong photosynthesis and high biomass.';
+    } else if (ndviMean >= 0.4) {
+      label = isHi ? 'मध्यम वनस्पति' : 'Moderate Vegetation';
+      interpretation = isHi
+        ? 'पर्याप्त फसल विकास। अनुकूल परिस्थितियों में सुधार की संभावना है।'
+        : 'Adequate crop growth. Can improve with optimized inputs and irrigation.';
+    } else if (ndviMean >= 0.2) {
+      label = isHi ? 'विरल वनस्पति' : 'Sparse Vegetation';
+      interpretation = isHi
+        ? 'कम फसल आवरण — नंगी मिट्टी, सूखा तनाव, या प्रारंभिक फसल अवस्था का संकेत।'
+        : 'Low crop cover — may indicate bare soil, drought stress, or early crop stage.';
+    } else {
+      label = isHi ? 'बहुत कम / कोई वनस्पति नहीं' : 'Very Low / No Vegetation';
+      interpretation = isHi
+        ? 'न्यूनतम वनस्पति आवरण। फसल बोई नहीं गई या गंभीर तनाव का संकेत।'
+        : 'Minimal vegetation cover. Field may be fallow, recently tilled, or under severe stress.';
+    }
+
+    let trend = isHi ? 'स्थिर' : 'Stable';
+    if (ndvi!.history.length >= 2) {
+      const oldest = ndvi!.history[0].mean;
+      const newest = ndvi!.history[ndvi!.history.length - 1].mean;
+      const delta = newest - oldest;
+      if (delta > 0.05) trend = isHi ? 'बेहतर हो रहा है ↑' : 'Improving ↑';
+      else if (delta < -0.05) trend = isHi ? 'घट रहा है ↓' : 'Declining ↓';
+    }
+
+    ndviStatus = { value: ndviMean.toFixed(3), label, interpretation, trend };
+  }
 
   // Extract key surface metrics
   const phVal = soil?.properties?.ph?.[0]?.value ?? 6.8;
@@ -59,7 +107,7 @@ export function generateOverallAssessment(
     forecast16Days.reduce((acc, d) => acc + (d.precipitation || 0), 0) * 10,
   ) / 10;
 
-  // 1. Calculate Health Score (0 to 100)
+  // 1. Calculate Health Score (0 to 100) — includes NDVI contribution
   let score = 70;
   if (phVal >= 6.0 && phVal <= 7.5) score += 10;
   else if (phVal < 5.5 || phVal > 8.2) score -= 10;
@@ -69,6 +117,14 @@ export function generateOverallAssessment(
 
   if (nitrogenVal >= 1.5) score += 5;
   if (rainfall16Days > 20 && rainfall16Days < 150) score += 5;
+
+  // NDVI contribution: up to ±10 points
+  if (ndviMean !== null) {
+    if (ndviMean >= 0.6) score += 10;
+    else if (ndviMean >= 0.4) score += 5;
+    else if (ndviMean >= 0.2) score += 0;
+    else score -= 10;
+  }
 
   score = Math.min(100, Math.max(30, score));
 
@@ -81,9 +137,7 @@ export function generateOverallAssessment(
   // 2. Texture & Soil Evaluation
   let textureType = isHi ? 'दोमट (संतुलित)' : 'Loam (Balanced)';
   if (clayVal >= 35)
-    textureType = isHi
-      ? 'चिकनी मिट्टी (अधिक जल संचयन)'
-      : 'Clay-rich (High water retention)';
+    textureType = isHi ? 'चिकनी मिट्टी (अधिक जल संचयन)' : 'Clay-rich (High water retention)';
   else if (sandVal >= 60)
     textureType = isHi ? 'रेतीली मिट्टी (शीघ्र निकासी)' : 'Sandy (Fast draining)';
   else if (siltVal >= 45)
@@ -91,46 +145,27 @@ export function generateOverallAssessment(
 
   const phStatus =
     phVal < 5.5
-      ? isHi
-        ? `अम्लीय (pH ${phVal})`
-        : `Acidic (pH ${phVal})`
+      ? isHi ? `अम्लीय (pH ${phVal})` : `Acidic (pH ${phVal})`
       : phVal > 7.8
-      ? isHi
-        ? `क्षारीय (pH ${phVal})`
-        : `Alkaline (pH ${phVal})`
-      : isHi
-      ? `आदर्श तटस्थ (pH ${phVal})`
-      : `Optimal Neutral (pH ${phVal})`;
+      ? isHi ? `क्षारीय (pH ${phVal})` : `Alkaline (pH ${phVal})`
+      : isHi ? `आदर्श तटस्थ (pH ${phVal})` : `Optimal Neutral (pH ${phVal})`;
 
   const organicMatterStatus =
     ocVal < 1.0
-      ? isHi
-        ? `कम (${ocVal} g/kg)`
-        : `Low (${ocVal} g/kg)`
+      ? isHi ? `कम (${ocVal} g/kg)` : `Low (${ocVal} g/kg)`
       : ocVal < 2.0
-      ? isHi
-        ? `मध्यम (${ocVal} g/kg)`
-        : `Moderate (${ocVal} g/kg)`
-      : isHi
-      ? `उच्च / स्वस्थ (${ocVal} g/kg)`
-      : `High / Healthy (${ocVal} g/kg)`;
+      ? isHi ? `मध्यम (${ocVal} g/kg)` : `Moderate (${ocVal} g/kg)`
+      : isHi ? `उच्च / स्वस्थ (${ocVal} g/kg)` : `High / Healthy (${ocVal} g/kg)`;
 
   const nitrogenStatus =
     nitrogenVal < 1.0
-      ? isHi
-        ? `कम (${nitrogenVal} g/kg)`
-        : `Low (${nitrogenVal} g/kg)`
+      ? isHi ? `कम (${nitrogenVal} g/kg)` : `Low (${nitrogenVal} g/kg)`
       : nitrogenVal < 1.8
-      ? isHi
-        ? `पर्याप्त (${nitrogenVal} g/kg)`
-        : `Adequate (${nitrogenVal} g/kg)`
-      : isHi
-      ? `प्रचुर (${nitrogenVal} g/kg)`
-      : `Rich (${nitrogenVal} g/kg)`;
+      ? isHi ? `पर्याप्त (${nitrogenVal} g/kg)` : `Adequate (${nitrogenVal} g/kg)`
+      : isHi ? `प्रचुर (${nitrogenVal} g/kg)` : `Rich (${nitrogenVal} g/kg)`;
 
   // 3. Crop Recommendations
   const cropRecommendations: CropRecommendation[] = [];
-
   const highSuit = isHi ? 'उच्च' : 'High';
   const modSuit = isHi ? 'मध्यम' : 'Moderate';
 
@@ -156,9 +191,7 @@ export function generateOverallAssessment(
 
   if (ocVal < 1.5 || nitrogenVal < 1.2) {
     cropRecommendations.push({
-      crop: isHi
-        ? 'दालें / दलहन (चना, सोयाबीन, अरहर)'
-        : 'Pulses / Legumes (Chickpea, Soybeans, Pigeon Pea)',
+      crop: isHi ? 'दालें / दलहन (चना, सोयाबीन, अरहर)' : 'Pulses / Legumes (Chickpea, Soybeans, Pigeon Pea)',
       suitability: highSuit,
       reason: isHi
         ? 'मिट्टी में प्राकृतिक रूप से नाइट्रोजन स्थिर करता है और जैविक कार्बन में सुधार करता है।'
@@ -168,9 +201,7 @@ export function generateOverallAssessment(
 
   if (sandVal > 40 && phVal >= 5.8) {
     cropRecommendations.push({
-      crop: isHi
-        ? 'सब्जियां (टमाटर, सरसों, आलू)'
-        : 'Vegetables (Tomatoes, Mustard, Potatoes)',
+      crop: isHi ? 'सब्जियां (टमाटर, सरसों, आलू)' : 'Vegetables (Tomatoes, Mustard, Potatoes)',
       suitability: modSuit,
       reason: isHi
         ? 'नियमित हल्की सिंचाई के साथ अच्छी जल निकासी वाली रेतीली दोमट मिट्टी में पनपती है।'
@@ -254,9 +285,7 @@ export function generateOverallAssessment(
   if (clayVal > 40 && rainfall16Days > 80) {
     riskAlerts.push({
       level: levelHigh,
-      title: isHi
-        ? 'जलभराव और जड़ घुटने का जोखिम'
-        : 'Waterlogging & Root Asphyxiation Risk',
+      title: isHi ? 'जलभराव और जड़ घुटने का जोखिम' : 'Waterlogging & Root Asphyxiation Risk',
       description: isHi
         ? 'उच्च चिकनी मिट्टी और भारी वर्षा के पूर्वानुमान से जलभराव हो सकता है। उचित जल निकासी नालियां सुनिश्चित करें।'
         : 'High clay content combined with heavy forecast precipitation may cause water stagnation. Ensure proper drainage ditches.',
@@ -266,9 +295,7 @@ export function generateOverallAssessment(
   if (humidityCurrent > 75 && tempCurrent > 24) {
     riskAlerts.push({
       level: levelMedium,
-      title: isHi
-        ? 'कवक (फंगल) और कीट प्रकोप की चेतावनी'
-        : 'Fungal & Pest Outbreak Warning',
+      title: isHi ? 'कवक (फंगल) और कीट प्रकोप की चेतावनी' : 'Fungal & Pest Outbreak Warning',
       description: isHi
         ? 'उच्च आर्द्रता (>75%) और गर्म तापमान फंगल पत्ती धब्बा और झुलसा रोग को बढ़ावा देते हैं। फसलों की बारीकी से निगरानी करें।'
         : 'High atmospheric humidity (>75%) and warm temperatures favor fungal leaf spot and blight. Monitor crops closely.',
@@ -288,9 +315,7 @@ export function generateOverallAssessment(
   if (phVal < 5.2) {
     riskAlerts.push({
       level: levelHigh,
-      title: isHi
-        ? 'एल्युमीनियम/सूक्ष्म पोषक तत्व विषाक्तता जोखिम'
-        : 'Aluminum / Micronutrient Toxicity Risk',
+      title: isHi ? 'एल्युमीनियम/सूक्ष्म पोषक तत्व विषाक्तता जोखिम' : 'Aluminum / Micronutrient Toxicity Risk',
       description: isHi
         ? 'अत्यधिक अम्लीय मिट्टी (pH < 5.2) एल्युमीनियम विषाक्तता का कारण बन सकती है और फास्फोरस की उपलब्धता रोक सकती है।'
         : 'Strongly acidic soil (pH < 5.2) can cause aluminum toxicity and lock phosphorus availability.',
@@ -298,16 +323,19 @@ export function generateOverallAssessment(
   }
 
   const areaHectares = boundary?.areaHectares ? Math.round(boundary.areaHectares * 100) / 100 : 0;
+
+  const ndviSummaryEn = ndviMean !== null ? ` Vegetation index (NDVI): ${ndviMean.toFixed(3)} — ${ndviStatus?.label ?? ''}.` : '';
+  const ndviSummaryHi = ndviMean !== null ? ` वनस्पति सूचकांक (NDVI): ${ndviMean.toFixed(3)} — ${ndviStatus?.label ?? ''}.` : '';
+
   const summary = isHi
-    ? `आपके खेत (${areaHectares > 0 ? areaHectares + ' हे' : 'चिह्नित क्षेत्र'}) का समग्र मूल्यांकन: मिट्टी का स्वास्थ्य स्कोर ${score}/100 (${healthStatus}) है। डेटा ISRIC SoilGrids, Open-Meteo, और Esri/Copernicus सेवाओं से विश्लेषित किया गया है।`
-    : `Overall assessment for your field (${
-        areaHectares > 0 ? areaHectares + ' ha' : 'drawn region'
-      }): Soil health score is ${score}/100 (${healthStatus}). Data synthesized from live accredited ISRIC SoilGrids, Open-Meteo, and Esri/Copernicus spatial services.`;
+    ? `आपके खेत (${areaHectares > 0 ? areaHectares + ' हे' : 'चिह्नित क्षेत्र'}) का समग्र मूल्यांकन: मिट्टी का स्वास्थ्य स्कोर ${score}/100 (${healthStatus}) है।${ndviSummaryHi} डेटा ISRIC SoilGrids, Open-Meteo, Agromonitoring, और Esri/Copernicus सेवाओं से विश्लेषित किया गया है।`
+    : `Overall assessment for your field (${areaHectares > 0 ? areaHectares + ' ha' : 'drawn region'}): Soil health score is ${score}/100 (${healthStatus}).${ndviSummaryEn} Data synthesized from live accredited ISRIC SoilGrids, Open-Meteo, Agromonitoring NDVI, and Esri/Copernicus spatial services.`;
 
   return {
     healthScore: score,
     healthStatus,
     summary,
+    ndviStatus,
     soilHealth: {
       rating: `${score}/100`,
       phStatus,
@@ -320,16 +348,10 @@ export function generateOverallAssessment(
       rainfall16Days,
       trend:
         rainfall16Days > 50
-          ? isHi
-            ? 'भारी वर्षा की संभावना'
-            : 'Wet / High Rain expected'
+          ? isHi ? 'भारी वर्षा की संभावना' : 'Wet / High Rain expected'
           : rainfall16Days > 15
-          ? isHi
-            ? 'मध्यम वर्षा'
-            : 'Moderate rainfall'
-          : isHi
-          ? 'कम वर्षा की संभावना'
-          : 'Dry / Low rain expected',
+          ? isHi ? 'मध्यम वर्षा' : 'Moderate rainfall'
+          : isHi ? 'कम वर्षा की संभावना' : 'Dry / Low rain expected',
     },
     cropRecommendations,
     fertilizerPlan,

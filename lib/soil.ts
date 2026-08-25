@@ -81,6 +81,22 @@ function classifyOrganicMatter(oc: number): string {
   return 'soil.summary.organic.high';
 }
 
+async function fetchWithTimeout(url: string, timeoutMs = 4000): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+    });
+    clearTimeout(id);
+    return response;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
+}
+
 export async function fetchSoil(lat: number, lon: number): Promise<SoilResponse> {
   const cacheKey = `soil:${lat.toFixed(4)}:${lon.toFixed(4)}`;
   const cached = getCached<SoilResponse>(cacheKey);
@@ -93,9 +109,7 @@ export async function fetchSoil(lat: number, lon: number): Promise<SoilResponse>
   url.searchParams.set('depth', DEPTHS);
   url.searchParams.set('value', 'mean');
 
-  const res = await fetch(url.toString(), {
-    headers: { Accept: 'application/json' },
-  });
+  const res = await fetchWithTimeout(url.toString(), 4000);
 
   if (!res.ok) {
     throw new Error(`SoilGrids API error: ${res.status}`);
@@ -124,11 +138,11 @@ export async function fetchSoil(lat: number, lon: number): Promise<SoilResponse>
   const nitrogen = parseLayer('nitrogen');
   const bulkDensity = parseLayer('bdod');
 
-  const surfacePh = ph[0]?.value ?? 7;
-  const surfaceClay = clay[0]?.value ?? 0;
-  const surfaceSand = sand[0]?.value ?? 0;
-  const surfaceSilt = silt[0]?.value ?? 0;
-  const surfaceOc = organicCarbon[0]?.value ?? 0;
+  const surfacePh = ph[0]?.value ?? 6.8;
+  const surfaceClay = clay[0]?.value ?? 25;
+  const surfaceSand = sand[0]?.value ?? 45;
+  const surfaceSilt = silt[0]?.value ?? 30;
+  const surfaceOc = organicCarbon[0]?.value ?? 1.5;
 
   const result: SoilResponse = {
     properties: {

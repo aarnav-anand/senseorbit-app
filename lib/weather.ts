@@ -41,6 +41,19 @@ function getSummaryKey(code: number): string {
   return WEATHER_SUMMARY_KEYS[code] ?? 'weather.summary.partlyCloudy';
 }
 
+async function fetchWithTimeout(url: string, timeoutMs = 4000): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(id);
+    return response;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
+}
+
 export async function fetchWeather(lat: number, lon: number): Promise<WeatherResponse> {
   const cacheKey = `weather:${lat.toFixed(4)}:${lon.toFixed(4)}`;
   const cached = getCached<WeatherResponse>(cacheKey);
@@ -73,16 +86,16 @@ export async function fetchWeather(lat: number, lon: number): Promise<WeatherRes
   archiveUrl.searchParams.set('timezone', 'auto');
 
   const [forecastRes, archiveRes] = await Promise.all([
-    fetch(forecastUrl.toString()),
-    fetch(archiveUrl.toString()),
+    fetchWithTimeout(forecastUrl.toString(), 4000).catch(() => null),
+    fetchWithTimeout(archiveUrl.toString(), 4000).catch(() => null),
   ]);
 
-  if (!forecastRes.ok) {
-    throw new Error(`Weather API error: ${forecastRes.status}`);
+  if (!forecastRes || !forecastRes.ok) {
+    throw new Error(`Weather API error: ${forecastRes ? forecastRes.status : 'timeout'}`);
   }
 
   const forecast = await forecastRes.json();
-  const archive = archiveRes.ok ? await archiveRes.json() : null;
+  const archive = archiveRes && archiveRes.ok ? await archiveRes.json().catch(() => null) : null;
 
   const current: WeatherCurrent = {
     temperature: forecast.current.temperature_2m,

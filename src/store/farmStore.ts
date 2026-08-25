@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Feature, Polygon } from 'geojson';
-import type { WeatherResponse, SoilResponse, SatelliteResponse } from '../types/report';
+import type { WeatherResponse, SoilResponse, SatelliteResponse, NdviResponse } from '../types/report';
 import type { Farmer } from '../lib/supabase';
 
 export interface FarmBoundary {
@@ -50,9 +50,11 @@ interface FarmState {
   weather: WeatherResponse | null;
   soil: SoilResponse | null;
   satellite: SatelliteResponse | null;
+  ndvi: NdviResponse | null;
   weatherError: string | null;
   soilError: string | null;
   satelliteError: string | null;
+  ndviError: string | null;
 
   setFarmer: (farmer: Farmer | null) => void;
   logoutFarmer: () => void;
@@ -65,9 +67,11 @@ interface FarmState {
     weather: WeatherResponse | null;
     soil: SoilResponse | null;
     satellite: SatelliteResponse | null;
+    ndvi: NdviResponse | null;
     weatherError?: string | null;
     soilError?: string | null;
     satelliteError?: string | null;
+    ndviError?: string | null;
     locationName?: string;
   }) => void;
   setLoadingReport: (loading: boolean) => void;
@@ -91,9 +95,11 @@ export const useFarmStore = create<FarmState>((set) => ({
   weather: null,
   soil: null,
   satellite: null,
+  ndvi: null,
   weatherError: null,
   soilError: null,
   satelliteError: null,
+  ndviError: null,
 
   setFarmer: (farmer) => {
     saveStoredFarmer(farmer);
@@ -109,6 +115,7 @@ export const useFarmStore = create<FarmState>((set) => ({
       weather: null,
       soil: null,
       satellite: null,
+      ndvi: null,
       creditExhaustedMessage: null,
       waterBodyError: null,
     });
@@ -131,9 +138,11 @@ export const useFarmStore = create<FarmState>((set) => ({
       weather: data.weather,
       soil: data.soil,
       satellite: data.satellite,
+      ndvi: data.ndvi,
       weatherError: data.weatherError ?? null,
       soilError: data.soilError ?? null,
       satelliteError: data.satelliteError ?? null,
+      ndviError: data.ndviError ?? null,
       locationName: data.locationName ?? null,
       reportError: null,
     }),
@@ -147,9 +156,11 @@ export const useFarmStore = create<FarmState>((set) => ({
       weather: null,
       soil: null,
       satellite: null,
+      ndvi: null,
       weatherError: null,
       soilError: null,
       satelliteError: null,
+      ndviError: null,
       reportError: null,
       isLoadingReport: false,
       creditExhaustedMessage: null,

@@ -1,4 +1,5 @@
-import type { WeatherResponse, SoilResponse, SatelliteResponse } from '../types/report';
+import type { WeatherResponse, SoilResponse, SatelliteResponse, NdviResponse } from '../types/report';
+import type { Feature, Polygon } from 'geojson';
 
 export interface GeocodeResult {
   displayName: string;
@@ -36,6 +37,23 @@ export function fetchSatelliteData(lat: number, lon: number): Promise<SatelliteR
   return apiGet('/api/satellite', { lat: String(lat), lon: String(lon) });
 }
 
+export async function fetchNdviData(
+  lat: number,
+  lon: number,
+  boundary: Feature<Polygon>,
+): Promise<NdviResponse> {
+  const res = await fetch('/api/ndvi', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lat, lon, boundary }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `NDVI API error ${res.status}`);
+  }
+  return res.json();
+}
+
 export function fetchGeocodeResults(query: string): Promise<GeocodeResult[]> {
   return apiGet('/api/geocode', { q: query });
 }
@@ -47,9 +65,6 @@ export function fetchLocationName(lat: number, lon: number): Promise<string> {
   }).then((r) => r.name);
 }
 
-/**
- * Direct client-side water check fallback in case backend route is unreachable.
- */
 export async function directWaterCheck(lat: number, lon: number): Promise<WaterCheckResult> {
   try {
     const geoUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=14`;
@@ -99,23 +114,9 @@ export async function directWaterCheck(lat: number, lon: number): Promise<WaterC
       (cls === 'natural' && ['water', 'bay', 'sea', 'ocean', 'coastline', 'wetland'].includes(type));
 
     const waterKeywords = [
-      'sea',
-      'ocean',
-      'bay',
-      'gulf',
-      'lake',
-      'river',
-      'reservoir',
-      'waterbody',
-      'dam',
-      'strait',
-      'creek',
-      'estuary',
-      'lagoon',
-      'gulf of khambhat',
-      'gulf of kutch',
-      'arabian sea',
-      'bay of bengal',
+      'sea', 'ocean', 'bay', 'gulf', 'lake', 'river', 'reservoir', 'waterbody',
+      'dam', 'strait', 'creek', 'estuary', 'lagoon', 'gulf of khambhat',
+      'gulf of kutch', 'arabian sea', 'bay of bengal',
     ];
     const isWaterKeyword = waterKeywords.some((kw) =>
       new RegExp(`\\b${kw}\\b`, 'i').test(displayName),

@@ -1,3 +1,4 @@
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { LanguageToggle } from './LanguageToggle';
 import { useFarmStore } from '../store/farmStore';
@@ -6,6 +7,12 @@ export function Header() {
   const { t } = useTranslation();
   const farmer = useFarmStore((s) => s.farmer);
   const logoutFarmer = useFarmStore((s) => s.logoutFarmer);
+
+  const handleLogout = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    logoutFarmer();
+  };
 
   return (
     <header className="no-print sticky top-0 z-[1100] border-b border-earth-200 bg-white/95 backdrop-blur">
@@ -30,8 +37,8 @@ export function Header() {
               </div>
               <button
                 type="button"
-                onClick={logoutFarmer}
-                className="rounded-lg border border-earth-200 px-2.5 py-1 text-xs font-medium text-earth-700 hover:bg-earth-50"
+                onClick={handleLogout}
+                className="rounded-lg border border-earth-200 px-2.5 py-1 text-xs font-medium text-earth-700 hover:bg-earth-50 focus:outline-none"
               >
                 {t('header.logout', 'Sign Out')}
               </button>

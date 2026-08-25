@@ -8,14 +8,22 @@ export function OverallAssessmentTab() {
   const weather = useFarmStore((s) => s.weather);
   const satellite = useFarmStore((s) => s.satellite);
   const boundary = useFarmStore((s) => s.boundary);
+  const ndvi = useFarmStore((s) => s.ndvi);
 
-  const assessment = generateOverallAssessment(soil, weather, satellite, boundary, i18n.language);
+  const assessment = generateOverallAssessment(soil, weather, satellite, boundary, i18n.language, ndvi);
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-emerald-700 bg-emerald-50 border-emerald-200';
     if (score >= 65) return 'text-field-700 bg-field-50 border-field-200';
     if (score >= 50) return 'text-amber-700 bg-amber-50 border-amber-200';
     return 'text-red-700 bg-red-50 border-red-200';
+  };
+
+  const getNdviBarColor = (val: number) => {
+    if (val >= 0.6) return 'bg-emerald-500';
+    if (val >= 0.4) return 'bg-field-500';
+    if (val >= 0.2) return 'bg-amber-500';
+    return 'bg-red-500';
   };
 
   const getBadgeColor = (level: string) => {
@@ -42,12 +50,7 @@ export function OverallAssessmentTab() {
             <p className="mt-1 text-sm text-earth-600">{assessment.summary}</p>
           </div>
 
-          {/* Health Score Gauge */}
-          <div
-            className={`flex shrink-0 flex-col items-center justify-center rounded-2xl border px-6 py-4 text-center shadow-xs ${getScoreColor(
-              assessment.healthScore,
-            )}`}
-          >
+          <div className={`flex shrink-0 flex-col items-center justify-center rounded-2xl border px-6 py-4 text-center shadow-xs ${getScoreColor(assessment.healthScore)}`}>
             <span className="text-3xl font-extrabold">{assessment.healthScore}/100</span>
             <span className="text-xs font-semibold uppercase tracking-wider mt-0.5">
               {assessment.healthStatus}
@@ -56,9 +59,62 @@ export function OverallAssessmentTab() {
         </div>
       </div>
 
+      {/* NDVI Card */}
+      {assessment.ndviStatus && (
+        <div className="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-2 border-b border-earth-100 pb-3">
+            <div className="rounded-lg bg-emerald-100 p-2 text-emerald-800">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+              </svg>
+            </div>
+            <div>
+              <h4 className="font-bold text-earth-900">
+                {t('ndvi.assessmentTitle', 'Vegetation Health (NDVI)')}
+              </h4>
+              <p className="text-xs text-earth-500">
+                {t('ndvi.source', 'Source: Agromonitoring (Sentinel-2 / Landsat)')}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            <div>
+              <div className="flex justify-between text-xs text-earth-600 mb-1">
+                <span className="font-medium">{t('ndvi.meanLabel', 'Mean NDVI')}</span>
+                <span className="font-bold text-earth-900">{assessment.ndviStatus.value}</span>
+              </div>
+              <div className="h-3 w-full rounded-full bg-earth-100 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${getNdviBarColor(parseFloat(assessment.ndviStatus.value))}`}
+                  style={{ width: `${Math.max(4, Math.min(100, ((parseFloat(assessment.ndviStatus.value) + 0.2) / 1.2) * 100))}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-xs text-earth-400 mt-0.5">
+                <span>−0.2</span><span>0</span><span>0.4</span><span>0.8+</span>
+              </div>
+            </div>
+
+            <div className="flex justify-between border-b border-earth-50 pb-2 text-sm">
+              <span className="text-earth-600">{t('ndvi.status', 'Status')}:</span>
+              <span className="font-semibold text-earth-900">{assessment.ndviStatus.label}</span>
+            </div>
+
+            <div className="flex justify-between border-b border-earth-50 pb-2 text-sm">
+              <span className="text-earth-600">{t('ndvi.trend', '60-Day Trend')}:</span>
+              <span className="font-semibold text-earth-900">{assessment.ndviStatus.trend}</span>
+            </div>
+
+            <p className="text-xs text-earth-600 leading-relaxed">
+              {assessment.ndviStatus.interpretation}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Grid: Soil Health & Weather Outlook */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Soil Health Summary */}
         <div className="rounded-xl border border-earth-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-2 border-b border-earth-100 pb-3">
             <div className="rounded-lg bg-amber-100 p-2 text-amber-800">
@@ -71,7 +127,6 @@ export function OverallAssessmentTab() {
               <p className="text-xs text-earth-500">{t('soil.source', 'Source: ISRIC SoilGrids')}</p>
             </div>
           </div>
-
           <div className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between border-b border-earth-50 pb-2">
               <span className="text-earth-600">{t('assessment.phLevel', 'pH Reaction')}:</span>
@@ -92,7 +147,6 @@ export function OverallAssessmentTab() {
           </div>
         </div>
 
-        {/* Weather Outlook */}
         <div className="rounded-xl border border-earth-200 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-2 border-b border-earth-100 pb-3">
             <div className="rounded-lg bg-blue-100 p-2 text-blue-800">
@@ -105,7 +159,6 @@ export function OverallAssessmentTab() {
               <p className="text-xs text-earth-500">{t('weather.source', 'Source: Open-Meteo')}</p>
             </div>
           </div>
-
           <div className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between border-b border-earth-50 pb-2">
               <span className="text-earth-600">{t('assessment.rain16Days', '16-Day Rainfall Sum')}:</span>
@@ -125,7 +178,7 @@ export function OverallAssessmentTab() {
         </div>
       </div>
 
-      {/* Crop Suitability & Advice */}
+      {/* Crop Suitability */}
       <div className="rounded-xl border border-earth-200 bg-white p-5 shadow-sm">
         <h4 className="font-bold text-earth-900 text-lg border-b border-earth-100 pb-3">
           🌾 {t('assessment.cropTitle', 'Recommended Crops & Agricultural Advice')}
@@ -135,13 +188,11 @@ export function OverallAssessmentTab() {
             <div key={idx} className="rounded-lg border border-earth-100 bg-earth-50/50 p-3.5">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-earth-900">{item.crop}</span>
-                <span
-                  className={`rounded-md px-2 py-0.5 text-xs font-semibold border ${
-                    item.suitability === 'High' || item.suitability === 'उच्च'
-                      ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                      : 'bg-amber-100 text-amber-800 border-amber-200'
-                  }`}
-                >
+                <span className={`rounded-md px-2 py-0.5 text-xs font-semibold border ${
+                  item.suitability === 'High' || item.suitability === 'उच्च'
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                    : 'bg-amber-100 text-amber-800 border-amber-200'
+                }`}>
                   {item.suitability} {t('assessment.suitabilityLabel', 'Suitability')}
                 </span>
               </div>
@@ -151,9 +202,8 @@ export function OverallAssessmentTab() {
         </div>
       </div>
 
-      {/* Fertilizer & Irrigation Grid */}
+      {/* Fertilizer & Irrigation */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Fertilizer Plan */}
         <div className="rounded-xl border border-earth-200 bg-white p-5 shadow-sm">
           <h4 className="font-bold text-earth-900 border-b border-earth-100 pb-3">
             🧪 {t('assessment.fertilizerTitle', 'Fertilizer & Soil Amendment Plan')}
@@ -168,7 +218,6 @@ export function OverallAssessmentTab() {
           </ul>
         </div>
 
-        {/* Irrigation Strategy */}
         <div className="rounded-xl border border-earth-200 bg-white p-5 shadow-sm">
           <h4 className="font-bold text-earth-900 border-b border-earth-100 pb-3">
             💧 {t('assessment.irrigationTitle', 'Irrigation & Water Management')}
@@ -179,7 +228,7 @@ export function OverallAssessmentTab() {
         </div>
       </div>
 
-      {/* Agronomic Risk Alerts */}
+      {/* Risk Alerts */}
       {assessment.riskAlerts.length > 0 && (
         <div className="rounded-xl border border-earth-200 bg-white p-5 shadow-sm">
           <h4 className="font-bold text-earth-900 border-b border-earth-100 pb-3">

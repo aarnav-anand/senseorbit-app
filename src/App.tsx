@@ -5,7 +5,7 @@ import { MapView } from './components/MapView';
 import { FarmReport } from './components/FarmReport';
 import { LoginPage } from './components/LoginPage';
 import { useFarmStore } from './store/farmStore';
-import { fetchFullReport, fetchWaterCheck } from './utils/api';
+import { fetchFullReport, fetchWaterCheck, fetchNdviData } from './utils/api';
 import { deductFarmerCredit } from './lib/supabase';
 
 export default function App() {
@@ -29,7 +29,6 @@ export default function App() {
     setCreditExhaustedMessage(null);
     setWaterBodyError(null);
 
-    // 1. Check if credits are exhausted (senseorbit <= 0)
     if (!farmer || farmer.senseorbit <= 0) {
       setCreditExhaustedMessage(
         'Credits exhausted. Please purchase more scans from agrifusion-hub.vercel.app',
@@ -41,7 +40,6 @@ export default function App() {
 
     setLoadingReport(true);
 
-    // 2. Check if boundary is drawn over a water body
     try {
       const waterCheck = await fetchWaterCheck(lat, lon);
       if (waterCheck.isWater) {
@@ -62,31 +60,37 @@ export default function App() {
     setReportError(null);
 
     try {
-      const data = await fetchFullReport(lat, lon);
+      const [data, ndviResult] = await Promise.all([
+        fetchFullReport(lat, lon),
+        fetchNdviData(lat, lon, boundary.polygon)
+          .then((d) => ({ data: d, error: null as string | null }))
+          .catch((err) => ({
+            data: null,
+            error: err instanceof Error ? err.message : 'Failed to load NDVI data',
+          })),
+      ]);
 
       setReportData({
         ...data,
+        ndvi: ndviResult.data,
+        ndviError: ndviResult.error,
         locationName: data.locationName ?? undefined,
       });
 
-      // 3. On successful scan, deduct 1 credit from Supabase database
       try {
         const updatedCredits = await deductFarmerCredit(farmer.id, farmer.senseorbit);
         updateCredits(updatedCredits);
       } catch (creditErr) {
         console.error('Could not deduct credit on Supabase:', creditErr);
-        // Fallback local credit deduction
         updateCredits(Math.max(0, farmer.senseorbit - 1));
       }
     } catch (err) {
-      // 4. Failed scan deducts 0 credits
       setReportError(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setLoadingReport(false);
     }
   }, [boundary, farmer, setCreditExhaustedMessage, setLoadingReport, setReportData, setReportError, setShowReport, setWaterBodyError, t, updateCredits]);
 
-  // If farmer is not logged in, render LoginPage
   if (!farmer) {
     return <LoginPage />;
   }

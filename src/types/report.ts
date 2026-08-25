@@ -43,6 +43,26 @@ export interface WeatherResponse {
   summaryKey: string;
 }
 
+export interface NdviStats {
+  mean: number;
+  std: number;
+  min: number;
+  max: number;
+  median: number;
+  p25: number;
+  p75: number;
+  num: number;
+  date: number;
+}
+
+export interface NdviResponse {
+  current: NdviStats | null;
+  history: NdviStats[];
+  polygonId: string | null;
+  captureDate: string;
+  error?: string;
+}
+
 export interface SatelliteLayer {
   id: string;
   nameKey: string;
