@@ -38,7 +38,7 @@ export function Header() {
                     : 'text-earth-600 hover:text-earth-900'
                 }`}
               >
-                🏠 {t('nav.dashboard', 'Dashboard')}
+                🏠 {t('nav.dashboard')}
               </button>
               <button
                 type="button"
@@ -49,7 +49,7 @@ export function Header() {
                     : 'text-earth-600 hover:text-earth-900'
                 }`}
               >
-                🗺️ {t('nav.drawFarm', 'Draw Farm')}
+                🗺️ {t('nav.drawFarm')}
               </button>
               {showReport && (
                 <button
@@ -61,7 +61,7 @@ export function Header() {
                       : 'text-earth-600 hover:text-earth-900'
                   }`}
                 >
-                  📊 {t('nav.report', 'Report')}
+                  📊 {t('nav.report')}
                 </button>
               )}
             </nav>
@@ -79,14 +79,14 @@ export function Header() {
                 <svg className="h-3.5 w-3.5 text-field-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                 </svg>
-                {farmer.senseorbit} {t('header.credits', 'Credits')}
+                {farmer.senseorbit} {t('header.credits')}
               </div>
               <button
                 type="button"
                 onClick={handleLogout}
                 className="rounded-lg border border-earth-200 px-2.5 py-1 text-xs font-medium text-earth-700 hover:bg-earth-50 focus:outline-none"
               >
-                {t('header.logout', 'Sign Out')}
+                {t('header.logout')}
               </button>
             </div>
           )}

@@ -45,7 +45,7 @@ export function IrrigationAdvisoryTab({ data, loading, error }: IrrigationAdviso
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
           <p className="text-sm font-medium text-earth-700">
-            {t('irrigation.loading', 'Fetching 7-day irrigation forecast…')}
+            {t('irrigation.loading')}
           </p>
           <p className="text-xs text-earth-500">Open-Meteo · SoilGrids · NDVI</p>
         </div>
@@ -58,7 +58,7 @@ export function IrrigationAdvisoryTab({ data, loading, error }: IrrigationAdviso
       <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
         <p className="text-sm text-red-800">⚠️ {error}</p>
         <p className="mt-2 text-xs text-red-600">
-          {t('irrigation.errorNote', 'Could not load irrigation advisory. Please try again.')}
+          {t('irrigation.errorNote')}
         </p>
       </div>
     );
@@ -68,7 +68,7 @@ export function IrrigationAdvisoryTab({ data, loading, error }: IrrigationAdviso
     return (
       <div className="rounded-xl border border-earth-200 bg-earth-50 p-6 text-center">
         <p className="text-sm text-earth-600">
-          {t('irrigation.noData', 'No irrigation advisory available. This tab is shown when you select "Crop Updates" intent.')}
+          {t('irrigation.noData')}
         </p>
       </div>
     );

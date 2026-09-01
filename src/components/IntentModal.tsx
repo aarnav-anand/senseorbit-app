@@ -50,10 +50,10 @@ export function IntentModal({ onNewSowing, onCropUpdate, onCancel }: IntentModal
         {/* Header */}
         <div className="border-b border-earth-100 px-6 py-5">
           <h2 className="text-xl font-bold text-earth-900">
-            🌱 {t('intent.title', 'What are you looking for?')}
+            🌱 {t('intent.title')}
           </h2>
           <p className="mt-1 text-sm text-earth-500">
-            {t('intent.subtitle', 'Choose the type of advisory you need for this farm boundary')}
+            {t('intent.subtitle')}
           </p>
         </div>
 
@@ -71,7 +71,7 @@ export function IntentModal({ onNewSowing, onCropUpdate, onCancel }: IntentModal
                 </div>
                 <div>
                   <h3 className="font-bold text-earth-900">
-                    {t('intent.newSowing.title', 'Plan New Sowing')}
+                    {t('intent.newSowing.title')}
                   </h3>
                   <p className="mt-1 text-xs leading-relaxed text-earth-600">
                     {t(
@@ -103,7 +103,7 @@ export function IntentModal({ onNewSowing, onCropUpdate, onCancel }: IntentModal
                 </div>
                 <div>
                   <h3 className="font-bold text-earth-900">
-                    {t('intent.cropUpdate.title', 'Updates on Existing Crop')}
+                    {t('intent.cropUpdate.title')}
                   </h3>
                   <p className="mt-1 text-xs leading-relaxed text-earth-600">
                     {t(
@@ -136,14 +136,14 @@ export function IntentModal({ onNewSowing, onCropUpdate, onCancel }: IntentModal
                   ←
                 </button>
                 <h3 className="font-semibold text-earth-900">
-                  {t('intent.cropDetails.title', 'Tell us about your crop')}
+                  {t('intent.cropDetails.title')}
                 </h3>
               </div>
 
               {/* Crop Selection */}
               <div>
                 <label className="block text-sm font-medium text-earth-800">
-                  {t('intent.cropDetails.cropLabel', 'Crop Being Grown')} *
+                  {t('intent.cropDetails.cropLabel')} *
                 </label>
                 <select
                   value={cropName}
@@ -170,7 +170,7 @@ export function IntentModal({ onNewSowing, onCropUpdate, onCancel }: IntentModal
               {/* Sowing Date */}
               <div>
                 <label className="block text-sm font-medium text-earth-800">
-                  {t('intent.cropDetails.sowingDateLabel', 'Date of Sowing')} *
+                  {t('intent.cropDetails.sowingDateLabel')} *
                 </label>
                 <input
                   type="date"
@@ -189,7 +189,7 @@ export function IntentModal({ onNewSowing, onCropUpdate, onCancel }: IntentModal
               )}
 
               <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2.5 text-xs text-blue-700 leading-relaxed">
-                💡 {t('intent.cropDetails.info', 'You\'ll get the full farm scan (soil, weather, NDVI, satellite) PLUS a 7-day irrigation plan and detailed fertilizer advisory tailored to your crop\'s growth stage.')}
+                💡 {t('intent.cropDetails.info')}
               </div>
 
               <button
@@ -197,7 +197,7 @@ export function IntentModal({ onNewSowing, onCropUpdate, onCancel }: IntentModal
                 onClick={handleConfirmCropUpdate}
                 className="w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700"
               >
-                {t('intent.cropDetails.confirm', 'Run Full Scan + Advisory →')}
+                {t('intent.cropDetails.confirm')}
               </button>
             </div>
           )}

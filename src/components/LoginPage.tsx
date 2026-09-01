@@ -15,7 +15,7 @@ export function LoginPage() {
     e.preventDefault();
     const cleanCode = difCode.trim();
     if (!cleanCode) {
-      setErrorMsg(t('login.emptyError', 'Please enter your 4-character DIF code.'));
+      setErrorMsg(t('login.emptyError'));
       return;
     }
 
@@ -36,7 +36,7 @@ export function LoginPage() {
       }
     } catch (err) {
       setErrorMsg(
-        t('login.networkError', 'Could not verify DIF code. Please check your connection.'),
+        t('login.networkError'),
       );
     } finally {
       setIsSubmitting(false);
@@ -67,10 +67,10 @@ export function LoginPage() {
           </svg>
         </div>
         <h2 className="mt-4 text-center text-3xl font-extrabold tracking-tight text-earth-900">
-          {t('app.name', 'SenseOrbit')}
+          {t('app.name')}
         </h2>
         <p className="mt-2 text-center text-sm text-earth-600">
-          {t('login.subtitle', 'Enter your 4-character DIF code to sign in and view your farm scans')}
+          {t('login.subtitle')}
         </p>
       </div>
 

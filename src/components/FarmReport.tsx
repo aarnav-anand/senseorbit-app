@@ -111,13 +111,13 @@ export function FarmReport() {
   if (!boundary) {
     return (
       <div className="rounded-2xl border border-earth-200 bg-white p-8 text-center shadow-xs space-y-4">
-        <p className="text-earth-700 font-medium">{t('map.noPolygon', 'Draw a farm boundary on the map first.')}</p>
+        <p className="text-earth-700 font-medium">{t('map.noPolygon')}</p></p>
         <button
           type="button"
           onClick={resetReport}
           className="rounded-xl bg-field-600 px-5 py-2.5 text-sm font-bold text-white shadow-xs hover:bg-field-700"
         >
-          {t('report.backToMap', 'Back to map')}
+            {t('report.backToMap')}
         </button>
       </div>
     );
@@ -138,7 +138,7 @@ export function FarmReport() {
             onClick={() => setLanguageWarning(null)}
             className="shrink-0 rounded-lg bg-amber-200/80 px-2.5 py-1 text-xs font-bold text-amber-900 hover:bg-amber-300"
           >
-            ✕ {t('common.close', 'Close')}
+            ✕ {t('common.close')}
           </button>
         </div>
       )}

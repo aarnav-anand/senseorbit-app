@@ -35,7 +35,10 @@
   "nav": {
     "language": "Language",
     "english": "English",
-    "hindi": "हिंदी"
+    "hindi": "हिंदी",
+    "dashboard": "Dashboard",
+    "drawFarm": "Draw Farm",
+    "report": "Report"
   },
   "map": {
     "title": "Draw Your Farm Boundary",
@@ -58,6 +61,17 @@
     "polygonTooSmall": "The drawn area is too small. Please draw a larger boundary.",
     "generatingReport": "Generating report…",
     "waterBodyRejected": "The drawn boundary is over a water body (ocean, lake, or river). Please redraw your farm boundary over agricultural land. No credits were deducted.",
+    "analyzeButton": "Analyze This Boundary",
+    "saveButton": "Save as Farm",
+    "myFarmsButton": "My Farms",
+    "saveFarm": {
+      "title": "Save This Farm Boundary",
+      "placeholder": "Farm name (e.g. North Field, Khet 1)"
+    },
+    "myFarmsTitle": "Saved Farms",
+    "noFarms": "No saved farms yet. Save a boundary to build your farm library.",
+    "startDrawing": "Draw Farm Polygon",
+    "stopDrawing": "Stop Drawing",
     "basemap": {
       "street": "Street map",
       "satellite": "Satellite (Esri World Imagery)"
@@ -156,6 +170,69 @@
     "close": "Close",
     "cancel": "Cancel",
     "confirm": "Confirm",
-    "error": "Something went wrong"
+    "error": "Something went wrong",
+    "save": "Save"
+  },
+  "dashboard": {
+    "portalTitle": "SenseOrbit Farmland Portal",
+    "welcome": "Welcome back",
+    "portalSubtitle": "Manage your farmlands and run AI scans",
+    "availableCredits": "Available Credits",
+    "scans": "Scans",
+    "createNew": "Create New Farmland",
+    "myFarmsTitle": "My Farmlands",
+    "myFarmsDesc": "Select an existing farm to run a scan or view details, or create a new farmland polygon.",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
+    "drawNewFarm": "Draw New Farm",
+    "noFarmsTitle": "No Farmlands Saved Yet",
+    "noFarmsDesc": "Draw your farm boundary on the interactive map to save it to your account and get satellite-based crop, soil, weather & market advice.",
+    "loadError": "Could not load your saved farmlands.",
+    "confirmDelete": "Are you sure you want to delete this farmland?",
+    "deleteError": "Failed to delete farmland.",
+    "createNewFarmland": "Create New Farmland",
+    "drawNewPolygon": "Draw a new polygon on the interactive map",
+    "savedFarmBadge": "Saved Farm",
+    "area": "Area",
+    "coordinates": "Coordinates",
+    "addedDate": "Added",
+    "scanFarm": "Scan Farm",
+    "viewOnMap": "Map"
+  },
+  "intent": {
+    "title": "What are you looking for?",
+    "subtitle": "Choose the type of advisory you need for this farm boundary",
+    "newSowing": {
+      "title": "Plan New Sowing"
+    },
+    "cropUpdate": {
+      "title": "Updates on Existing Crop"
+    },
+    "cropDetails": {
+      "title": "Tell us about your crop",
+      "cropLabel": "Crop Being Grown",
+      "sowingDateLabel": "Date of Sowing",
+      "info": "You'll get the full farm scan (soil, weather, NDVI, satellite) PLUS a 7-day irrigation plan and detailed fertilizer advisory tailored to your crop's growth stage.",
+      "confirm": "Run Full Scan + Advisory →"
+    }
+  },
+  "fertilizer": {
+    "loading": "Generating fertilizer advisory with Gemini AI…",
+    "noData": "Fertilizer advice is generated when you select \"Crop Updates\" intent."
+  },
+  "irrigation": {
+    "loading": "Fetching 7-day irrigation forecast…",
+    "errorNote": "Could not load irrigation advisory. Please try again.",
+    "noData": "No irrigation advisory available. This tab is shown when you select \"Crop Updates\" intent."
+  },
+  "mandi": {
+    "loading": "Fetching live mandi prices…",
+    "refresh": "Refresh"
+  },
+  "soil": {
+    "title": "Soil Analysis",
+    "source": "Source: ISRIC SoilGrids (250m resolution)",
+    "errorTitle": "Soil Data Unavailable",
+    "errorMessage": "The soil information service (ISRIC SoilGrids) is currently slow or down. Please try again later."
   }
 }

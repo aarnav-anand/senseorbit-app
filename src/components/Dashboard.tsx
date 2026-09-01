@@ -38,7 +38,7 @@ export function Dashboard({ onStartScan, onCreateNewFarm }: DashboardProps) {
       setFarmlands(data);
     } catch (err) {
       console.error('Error fetching farmlands:', err);
-      setLoadError(t('dashboard.loadError', 'Could not load your saved farmlands.'));
+      setLoadError(t('dashboard.loadError'));
     } finally {
       setFarmlandsLoading(false);
     }
@@ -74,13 +74,13 @@ export function Dashboard({ onStartScan, onCreateNewFarm }: DashboardProps) {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!window.confirm(t('dashboard.confirmDelete', 'Are you sure you want to delete this farmland?'))) return;
+    if (!window.confirm(t('dashboard.confirmDelete'))) return;
     setDeletingId(id);
     try {
       await deleteFarmland(id);
       removeFarmland(id);
     } catch (err) {
-      alert(t('dashboard.deleteError', 'Failed to delete farmland.'));
+      alert(t('dashboard.deleteError'));
     } finally {
       setDeletingId(null);
     }
@@ -113,13 +113,13 @@ export function Dashboard({ onStartScan, onCreateNewFarm }: DashboardProps) {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-emerald-800/80 px-3 py-1 text-xs font-semibold text-emerald-100 border border-emerald-700/50">
-              <span>🌾</span> {t('dashboard.portalTitle', 'SenseOrbit Farmland Portal')}
+              <span>🌾</span> {t('dashboard.portalTitle')}
             </div>
             <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl drop-shadow-xs">
-              {t('dashboard.welcome', 'Welcome back')}, {farmer?.farmer_name}!
+              {t('dashboard.welcome')}, {farmer?.farmer_name}!
             </h2>
             <p className="mt-1 text-sm font-medium text-emerald-100">
-              DIF Code: <span className="font-bold tracking-wider text-white underline decoration-emerald-400">{farmer?.dif_code}</span> · {t('dashboard.portalSubtitle', 'Manage your farmlands and run AI scans')}
+              DIF Code: <span className="font-bold tracking-wider text-white underline decoration-emerald-400">{farmer?.dif_code}</span> · {t('dashboard.portalSubtitle')}
             </p>
           </div>
 
@@ -127,8 +127,8 @@ export function Dashboard({ onStartScan, onCreateNewFarm }: DashboardProps) {
             <div className="flex items-center gap-3 rounded-2xl bg-emerald-950/60 px-5 py-3 border border-emerald-700/60 shadow-inner">
               <span className="text-2xl">⚡</span>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">{t('dashboard.availableCredits', 'Available Credits')}</p>
-                <p className="text-2xl font-black text-white">{farmer?.senseorbit ?? 0} {t('dashboard.scans', 'Scans')}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">{t('dashboard.availableCredits')}</p>
+                <p className="text-2xl font-black text-white">{farmer?.senseorbit ?? 0} {t('dashboard.scans')}</p>
               </div>
             </div>
             <button
@@ -136,7 +136,7 @@ export function Dashboard({ onStartScan, onCreateNewFarm }: DashboardProps) {
               onClick={onCreateNewFarm}
               className="w-full sm:w-auto rounded-xl bg-white px-5 py-2.5 text-sm font-extrabold text-emerald-950 shadow-md hover:bg-emerald-50 transition-all hover:scale-105"
             >
-              ➕ {t('dashboard.createNew', 'Create New Farmland')}
+              ➡️ {t('dashboard.createNew')}
             </button>
           </div>
         </div>
@@ -146,10 +146,10 @@ export function Dashboard({ onStartScan, onCreateNewFarm }: DashboardProps) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-xl font-bold text-earth-900">
-            🏡 {t('dashboard.myFarmsTitle', 'My Farmlands')}
+            🍁 {t('dashboard.myFarmsTitle')}
           </h3>
           <p className="text-xs text-earth-500">
-            {t('dashboard.myFarmsDesc', 'Select an existing farm to run a scan or view details, or create a new farmland polygon.')}
+            {t('dashboard.myFarmsDesc')}
           </p>
         </div>
 
@@ -160,7 +160,7 @@ export function Dashboard({ onStartScan, onCreateNewFarm }: DashboardProps) {
             disabled={farmlandsLoading}
             className="rounded-lg border border-earth-200 bg-white px-3.5 py-2 text-xs font-semibold text-earth-700 hover:bg-earth-50 disabled:opacity-50"
           >
-            ↻ {farmlandsLoading ? t('dashboard.refreshing', 'Refreshing…') : t('dashboard.refresh', 'Refresh')}
+            ↑ {farmlandsLoading ? t('dashboard.refreshing') : t('dashboard.refresh')}
           </button>
           <button
             type="button"
@@ -193,17 +193,17 @@ export function Dashboard({ onStartScan, onCreateNewFarm }: DashboardProps) {
             🌱
           </div>
           <h4 className="mt-4 text-lg font-bold text-earth-900">
-            {t('dashboard.noFarmsTitle', 'No Farmlands Saved Yet')}
+            {t('dashboard.noFarmsTitle')}
           </h4>
           <p className="mx-auto mt-1 max-w-md text-sm text-earth-600">
-            {t('dashboard.noFarmsDesc', 'Draw your farm boundary on the interactive map to save it to your account and get satellite-based crop, soil, weather & market advice.')}
+            {t('dashboard.noFarmsDesc')}
           </p>
           <button
             type="button"
             onClick={onCreateNewFarm}
             className="mt-6 inline-flex items-center gap-2 rounded-xl bg-field-600 px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-field-700 transition-all hover:scale-105"
           >
-            🗺️ {t('dashboard.drawNewFarm', 'Draw New Farm')} →
+            🔄 {t('dashboard.drawNewFarm')} →
           </button>
         </div>
       ) : (
@@ -217,8 +217,8 @@ export function Dashboard({ onStartScan, onCreateNewFarm }: DashboardProps) {
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-field-600 text-white text-xl shadow-xs group-hover:scale-110 transition-transform">
               ➕
             </div>
-            <h4 className="mt-3 font-bold text-field-900">{t('dashboard.createNewFarmland', 'Create New Farmland')}</h4>
-            <p className="mt-1 text-xs text-field-700">{t('dashboard.drawNewPolygon', 'Draw a new polygon on the interactive map')}</p>
+            <h4 className="mt-3 font-bold text-field-900">{t('dashboard.createNewFarmland')}</h4>
+            <p className="mt-1 text-xs text-field-700">{t('dashboard.drawNewPolygon')}</p>
           </div>
 
           {farmlands.map((farm) => (
@@ -230,7 +230,7 @@ export function Dashboard({ onStartScan, onCreateNewFarm }: DashboardProps) {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <span className="inline-block rounded-md bg-field-50 border border-field-200 px-2 py-0.5 text-[10px] font-bold text-field-800 uppercase tracking-wide">
-                      {t('dashboard.savedFarmBadge', 'Saved Farm')}
+                      {t('dashboard.savedFarmBadge')}
                     </span>
                     <h4 className="mt-1 truncate text-lg font-bold text-earth-900">{farm.name}</h4>
                   </div>
@@ -247,19 +247,19 @@ export function Dashboard({ onStartScan, onCreateNewFarm }: DashboardProps) {
 
                 <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
                   <div className="rounded-lg bg-earth-50 p-2.5">
-                    <span className="text-earth-500 block">{t('dashboard.area', 'Area')}</span>
+                    <span className="text-earth-500 block">{t('dashboard.area')}</span>
                     <span className="font-bold text-earth-900">{farm.area_ha.toFixed(2)} ha</span>
                     <span className="text-earth-400 block text-[10px]">({farm.area_acres.toFixed(2)} acres)</span>
                   </div>
                   <div className="rounded-lg bg-earth-50 p-2.5">
-                    <span className="text-earth-500 block">{t('dashboard.coordinates', 'Coordinates')}</span>
+                    <span className="text-earth-500 block">{t('dashboard.coordinates')}</span>
                     <span className="font-semibold text-earth-900">{farm.centroid_lat.toFixed(3)}, {farm.centroid_lon.toFixed(3)}</span>
                   </div>
                 </div>
 
                 {farm.created_at && (
                   <p className="mt-3 text-[11px] text-earth-400">
-                    {t('dashboard.addedDate', 'Added')}: {new Date(farm.created_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {t('dashboard.addedDate')}: {new Date(farm.created_at).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', year: 'numeric' })}
                   </p>
                 )}
               </div>
@@ -270,14 +270,14 @@ export function Dashboard({ onStartScan, onCreateNewFarm }: DashboardProps) {
                   onClick={() => handleSelectFarmForScan(farm)}
                   className="flex-1 rounded-xl bg-field-600 py-2.5 text-xs font-bold text-white hover:bg-field-700 shadow-xs transition-colors"
                 >
-                  🔬 {t('dashboard.scanFarm', 'Scan Farm')}
+                  🔬 {t('dashboard.scanFarm')}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleViewFarmOnMap(farm)}
                   className="rounded-xl border border-earth-200 bg-earth-50 px-3 py-2.5 text-xs font-semibold text-earth-700 hover:bg-earth-100 transition-colors"
                 >
-                  🗺️ {t('dashboard.viewOnMap', 'Map')}
+                  📄 {t('dashboard.viewOnMap')}
                 </button>
               </div>
             </div>

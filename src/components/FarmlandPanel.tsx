@@ -111,21 +111,21 @@ export function FarmlandPanel({ onScan }: FarmlandPanelProps) {
           onClick={onScan}
           className="rounded-lg bg-field-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-field-700"
         >
-          🔬 {t('map.analyzeButton', 'Analyze This Boundary')}
+          🔌 {t('map.analyzeButton')}
         </button>
         <button
           type="button"
           onClick={() => { setShowSaveForm((v) => !v); setSaveError(null); setSaveSuccess(null); }}
           className="rounded-lg border border-earth-300 bg-white px-4 py-2.5 text-sm font-medium text-earth-800 hover:bg-earth-50"
         >
-          💾 {t('map.saveButton', 'Save as Farm')}
+          💾 {t('map.saveButton')}
         </button>
         <button
           type="button"
           onClick={handleToggleFarmList}
           className="rounded-lg border border-earth-200 bg-earth-50 px-4 py-2.5 text-sm font-medium text-earth-700 hover:bg-earth-100"
         >
-          📋 {t('map.myFarmsButton', 'My Farms')} {farmlands.length > 0 && `(${farmlands.length})`}
+          📋 {t('map.myFarmsButton')} {farmlands.length > 0 && `(${farmlands.length})`}
         </button>
       </div>
 
@@ -133,14 +133,14 @@ export function FarmlandPanel({ onScan }: FarmlandPanelProps) {
       {showSaveForm && (
         <div className="rounded-xl border border-field-200 bg-field-50 p-4">
           <p className="mb-3 text-sm font-semibold text-earth-900">
-            💾 {t('map.saveFarm.title', 'Save This Farm Boundary')}
+            💾 {t('map.saveFarm.title')}
           </p>
           <div className="flex gap-2">
             <input
               type="text"
               value={farmName}
               onChange={(e) => setFarmName(e.target.value)}
-              placeholder={t('map.saveFarm.placeholder', 'Farm name (e.g. North Field, Khet 1)')}
+              placeholder={t('map.saveFarm.placeholder')}
               maxLength={60}
               className="flex-1 rounded-lg border border-earth-300 px-3 py-2 text-sm focus:border-field-500 focus:outline-none focus:ring-2 focus:ring-field-500/20"
             />
@@ -150,7 +150,7 @@ export function FarmlandPanel({ onScan }: FarmlandPanelProps) {
               disabled={isSaving}
               className="shrink-0 rounded-lg bg-field-600 px-4 py-2 text-sm font-semibold text-white hover:bg-field-700 disabled:opacity-60"
             >
-              {isSaving ? '…' : t('common.save', 'Save')}
+              {isSaving ? '…' : t('common.save')}
             </button>
           </div>
           {saveError && (
@@ -171,7 +171,7 @@ export function FarmlandPanel({ onScan }: FarmlandPanelProps) {
         <div className="rounded-xl border border-earth-200 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b border-earth-100 px-4 py-3">
             <h4 className="text-sm font-semibold text-earth-900">
-              📋 {t('map.myFarmsTitle', 'Saved Farms')}
+              📋 {t('map.myFarmsTitle')}
             </h4>
             <button
               type="button"
@@ -189,7 +189,7 @@ export function FarmlandPanel({ onScan }: FarmlandPanelProps) {
             </div>
           ) : farmlands.length === 0 ? (
             <p className="px-4 py-6 text-center text-sm text-earth-500">
-              {t('map.noFarms', 'No saved farms yet. Save a boundary to build your farm library.')}
+              {t('map.noFarms')}
             </p>
           ) : (
             <ul className="divide-y divide-earth-50">

@@ -38,7 +38,7 @@ export function FertilizerTab({ data, loading, error, crop }: FertilizerTabProps
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-field-600 border-t-transparent" />
           <p className="text-sm font-medium text-earth-700">
-            {t('fertilizer.loading', 'Generating fertilizer advisory with Gemini AI…')}
+            {t('fertilizer.loading')}
           </p>
           <p className="text-xs text-earth-500">Powered by Google Gemini · Soil-calibrated</p>
         </div>
@@ -61,7 +61,7 @@ export function FertilizerTab({ data, loading, error, crop }: FertilizerTabProps
     return (
       <div className="rounded-xl border border-earth-200 bg-earth-50 p-6 text-center">
         <p className="text-sm text-earth-600">
-          {t('fertilizer.noData', 'Fertilizer advice is generated when you select "Crop Updates" intent.')}
+          {t('fertilizer.noData')}
         </p>
       </div>
     );

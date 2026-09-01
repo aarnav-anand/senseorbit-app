@@ -28,7 +28,7 @@ export function MandiPricesTab({ data, loading, error, crop, onRefresh }: MandiP
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent" />
           <p className="text-sm font-medium text-earth-700">
-            {t('mandi.loading', 'Fetching live mandi prices…')}
+            {t('mandi.loading')}
           </p>
           <p className="text-xs text-earth-500">Source: Agmarknet / data.gov.in</p>
         </div>
@@ -76,7 +76,7 @@ export function MandiPricesTab({ data, loading, error, crop, onRefresh }: MandiP
           disabled={loading}
           className="shrink-0 rounded-lg border border-earth-200 bg-white px-4 py-2 text-sm font-medium text-earth-700 hover:bg-earth-50 disabled:opacity-60"
         >
-          ↻ {t('mandi.refresh', 'Refresh')}
+          ↑ {t('mandi.refresh')}
         </button>
       </div>
 

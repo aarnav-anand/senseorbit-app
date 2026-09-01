@@ -276,7 +276,7 @@ export function MapView({ onConfirm }: MapViewProps) {
               onClick={handleStartDrawing}
               className="inline-flex items-center gap-2 rounded-xl bg-field-600 px-5 py-2.5 text-sm font-extrabold text-white shadow-md hover:bg-field-700 transition-all hover:scale-105"
             >
-              ✏️ {t('map.startDrawing', 'Draw Farm Polygon')}
+              ✏️ {t('map.startDrawing')}
             </button>
           ) : (
             <button
@@ -284,7 +284,7 @@ export function MapView({ onConfirm }: MapViewProps) {
               onClick={handleStopDrawing}
               className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-bold text-white shadow-md hover:bg-amber-700"
             >
-              🛑 {t('map.stopDrawing', 'Stop Drawing')}
+              🛑 {t('map.stopDrawing')}
             </button>
           )}
 
