@@ -7,6 +7,9 @@ export function Header() {
   const { t } = useTranslation();
   const farmer = useFarmStore((s) => s.farmer);
   const logoutFarmer = useFarmStore((s) => s.logoutFarmer);
+  const currentView = useFarmStore((s) => s.currentView);
+  const setCurrentView = useFarmStore((s) => s.setCurrentView);
+  const showReport = useFarmStore((s) => s.showReport);
 
   const handleLogout = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -17,9 +20,52 @@ export function Header() {
   return (
     <header className="no-print sticky top-0 z-[1100] border-b border-earth-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <div className="min-w-0">
-          <h1 className="truncate text-lg font-bold text-field-700 sm:text-xl">{t('app.name')}</h1>
-          <p className="hidden truncate text-sm text-earth-600 sm:block">{t('app.tagline')}</p>
+        <div className="flex items-center gap-6">
+          <div className="min-w-0 cursor-pointer" onClick={() => farmer && setCurrentView('dashboard')}>
+            <h1 className="truncate text-lg font-bold text-field-700 sm:text-xl">{t('app.name')}</h1>
+            <p className="hidden truncate text-xs text-earth-600 sm:block">{t('app.tagline', 'Accredited Satellite & AI Agronomy Portal')}</p>
+          </div>
+
+          {/* View Switcher Navigation */}
+          {farmer && (
+            <nav className="flex items-center gap-1 rounded-xl bg-earth-100/70 p-1 text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setCurrentView('dashboard')}
+                className={`rounded-lg px-3 py-1.5 transition-colors ${
+                  currentView === 'dashboard'
+                    ? 'bg-white text-field-800 shadow-2xs font-bold'
+                    : 'text-earth-600 hover:text-earth-900'
+                }`}
+              >
+                🏠 Dashboard
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentView('map')}
+                className={`rounded-lg px-3 py-1.5 transition-colors ${
+                  currentView === 'map'
+                    ? 'bg-white text-field-800 shadow-2xs font-bold'
+                    : 'text-earth-600 hover:text-earth-900'
+                }`}
+              >
+                🗺️ Draw Farm
+              </button>
+              {showReport && (
+                <button
+                  type="button"
+                  onClick={() => setCurrentView('report')}
+                  className={`rounded-lg px-3 py-1.5 transition-colors ${
+                    currentView === 'report'
+                      ? 'bg-white text-field-800 shadow-2xs font-bold'
+                      : 'text-earth-600 hover:text-earth-900'
+                  }`}
+                >
+                  📊 Report
+                </button>
+              )}
+            </nav>
+          )}
         </div>
 
         <div className="flex items-center gap-3">

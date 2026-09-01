@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Header } from './components/Header';
+import { Dashboard } from './components/Dashboard';
 import { MapView } from './components/MapView';
 import { FarmReport } from './components/FarmReport';
 import { LoginPage } from './components/LoginPage';
@@ -19,8 +20,8 @@ import { deductFarmerCredit } from './lib/supabase';
 export default function App() {
   const { t } = useTranslation();
   const farmer = useFarmStore((s) => s.farmer);
-  const showReport = useFarmStore((s) => s.showReport);
-  const boundary = useFarmStore((s) => s.boundary);
+  const currentView = useFarmStore((s) => s.currentView);
+  const setCurrentView = useFarmStore((s) => s.setCurrentView);
   const setShowReport = useFarmStore((s) => s.setShowReport);
   const setLoadingReport = useFarmStore((s) => s.setLoadingReport);
   const setReportData = useFarmStore((s) => s.setReportData);
@@ -47,7 +48,8 @@ export default function App() {
 
   const handleConfirmBoundary = useCallback(
     async (intent: 'new' | 'update', crop?: string, sowingDate?: string) => {
-      if (!boundary?.isValid) return;
+      const currentBoundary = useFarmStore.getState().boundary;
+      if (!currentBoundary?.isValid) return;
 
       setCreditExhaustedMessage(null);
       setWaterBodyError(null);
@@ -59,9 +61,13 @@ export default function App() {
         return;
       }
 
-      const [lat, lon] = boundary.centroid;
+      const [lat, lon] = currentBoundary.centroid;
 
       setLoadingReport(true);
+      setCurrentView('report');
+      setShowReport(true);
+      setReportError(null);
+      setActiveTab(intent === 'update' ? 'irrigation' : 'assessment');
 
       try {
         const waterCheck = await fetchWaterCheck(lat, lon);
@@ -79,14 +85,10 @@ export default function App() {
         console.warn('Water body check failed, continuing scan:', waterErr);
       }
 
-      setShowReport(true);
-      setReportError(null);
-      setActiveTab(intent === 'update' ? 'irrigation' : 'assessment');
-
       try {
         const [data, ndviResult] = await Promise.all([
           fetchFullReport(lat, lon),
-          fetchNdviData(lat, lon, boundary.polygon)
+          fetchNdviData(lat, lon, currentBoundary.polygon)
             .then((d) => ({ data: d, error: null as string | null }))
             .catch((err) => ({
               data: null,
@@ -105,7 +107,7 @@ export default function App() {
           locationName: data.locationName ?? undefined,
         });
 
-        // Deduct credit
+        // Deduct 1 credit for EVERY scan in ANY setting
         try {
           const updatedCredits = await deductFarmerCredit(farmer.id, farmer.senseorbit);
           updateCredits(updatedCredits);
@@ -142,7 +144,7 @@ export default function App() {
             temperature: fullWeather?.current?.temperature,
             humidity: fullWeather?.current?.humidity,
             region: data.locationName ?? undefined,
-            areaHectares: boundary.areaHectares,
+            areaHectares: currentBoundary.areaHectares,
           })
             .then((res) => setGeminiCropAdvice(res))
             .catch((err) => setGeminiCropError(err instanceof Error ? err.message : 'Failed to generate Gemini AI crop advice'))
@@ -183,7 +185,7 @@ export default function App() {
             temperature: fullWeather?.current?.temperature,
             humidity: fullWeather?.current?.humidity,
             region: data.locationName ?? undefined,
-            areaHectares: boundary.areaHectares,
+            areaHectares: currentBoundary.areaHectares,
           })
             .then((res) => setFertilizerAdvice(res))
             .catch((err) => setFertilizerError(err instanceof Error ? err.message : 'Failed to load fertilizer advice'))
@@ -196,9 +198,9 @@ export default function App() {
       }
     },
     [
-      boundary,
       farmer,
       setCreditExhaustedMessage,
+      setCurrentView,
       setFertilizerAdvice,
       setFertilizerError,
       setFertilizerLoading,
@@ -265,9 +267,16 @@ export default function App() {
       )}
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
-        {!showReport ? (
+        {currentView === 'dashboard' && (
+          <Dashboard
+            onStartScan={(intent, crop, sowingDate) => handleConfirmBoundary(intent, crop, sowingDate)}
+            onCreateNewFarm={() => setCurrentView('map')}
+          />
+        )}
+        {currentView === 'map' && (
           <MapView onConfirm={handleConfirmBoundary} />
-        ) : (
+        )}
+        {currentView === 'report' && (
           <FarmReport />
         )}
       </main>

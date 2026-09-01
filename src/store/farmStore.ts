@@ -41,6 +41,7 @@ function saveStoredFarmer(farmer: Farmer | null) {
 }
 
 interface FarmState {
+  currentView: 'dashboard' | 'map' | 'report';
   farmer: Farmer | null;
   boundary: FarmBoundary | null;
   locationName: string | null;
@@ -87,6 +88,7 @@ interface FarmState {
   mandiLoading: boolean;
   mandiError: string | null;
 
+  setCurrentView: (view: 'dashboard' | 'map' | 'report') => void;
   setFarmer: (farmer: Farmer | null) => void;
   logoutFarmer: () => void;
   updateCredits: (credits: number) => void;
@@ -137,6 +139,7 @@ interface FarmState {
 }
 
 export const useFarmStore = create<FarmState>((set) => ({
+  currentView: 'dashboard',
   farmer: loadStoredFarmer(),
   boundary: null,
   locationName: null,
@@ -178,6 +181,7 @@ export const useFarmStore = create<FarmState>((set) => ({
   mandiLoading: false,
   mandiError: null,
 
+  setCurrentView: (currentView) => set({ currentView }),
   setFarmer: (farmer) => {
     saveStoredFarmer(farmer);
     set({ farmer });
@@ -186,6 +190,7 @@ export const useFarmStore = create<FarmState>((set) => ({
   logoutFarmer: () => {
     saveStoredFarmer(null);
     set({
+      currentView: 'dashboard',
       farmer: null,
       showReport: false,
       boundary: null,
@@ -237,6 +242,7 @@ export const useFarmStore = create<FarmState>((set) => ({
   setWaterBodyError: (waterBodyError) => set({ waterBodyError }),
   resetReport: () =>
     set({
+      currentView: 'dashboard',
       showReport: false,
       weather: null,
       soil: null,
