@@ -55,6 +55,9 @@ export function FarmReport() {
   const setMandiLoading = useFarmStore((s) => s.setMandiLoading);
   const setMandiError = useFarmStore((s) => s.setMandiError);
 
+  const languageWarning = useFarmStore((s) => s.languageWarning);
+  const setLanguageWarning = useFarmStore((s) => s.setLanguageWarning);
+
   // Compute visible tabs based on intent
   const visibleTabs = ALL_TABS.filter((tab) => {
     if (tab.onlyForUpdate) return sowingIntent === 'update';
@@ -104,9 +107,6 @@ export function FarmReport() {
       </div>
     );
   }
-
-  const languageWarning = useFarmStore((s) => s.languageWarning);
-  const setLanguageWarning = useFarmStore((s) => s.setLanguageWarning);
 
   if (!boundary) {
     return (
