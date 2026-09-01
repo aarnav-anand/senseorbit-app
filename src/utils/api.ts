@@ -1,4 +1,4 @@
-import type { WeatherResponse, SoilResponse, SatelliteResponse, NdviResponse } from '../types/report';
+import type { WeatherResponse, SoilResponse, SatelliteResponse, NdviResponse, IrrigationAdvisory, GeminiCropAdvice, FertilizerAdvice, MandiResponse } from '../types/report';
 import type { Feature, Polygon } from 'geojson';
 
 export interface GeocodeResult {
@@ -184,4 +184,103 @@ export async function fetchFullReport(lat: number, lon: number) {
     satelliteError: satelliteResult.error,
     locationName,
   };
+}
+
+export interface GeminiNewSowingRequest {
+  lat: number;
+  lon: number;
+  mode: 'new_sowing';
+  ndviMean?: number;
+  soilPh?: number;
+  soilTexture?: string;
+  soilOC?: number;
+  soilBD?: number;
+  soilN?: number;
+  rainfall16Days?: number;
+  temperature?: number;
+  humidity?: number;
+  region?: string;
+  areaHectares?: number;
+}
+
+export interface GeminiFertilizerRequest {
+  lat: number;
+  lon: number;
+  mode: 'fertilizer';
+  crop: string;
+  sowingDate: string;
+  ndviMean?: number;
+  soilPh?: number;
+  soilTexture?: string;
+  soilOC?: number;
+  soilBD?: number;
+  soilN?: number;
+  rainfall16Days?: number;
+  temperature?: number;
+  humidity?: number;
+  region?: string;
+  areaHectares?: number;
+}
+
+export async function fetchGeminiCropAdvice(
+  params: GeminiNewSowingRequest
+): Promise<GeminiCropAdvice> {
+  const res = await fetch('/api/gemini-advisor', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `Gemini advisor error ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchGeminiFertilizerAdvice(
+  params: GeminiFertilizerRequest
+): Promise<FertilizerAdvice> {
+  const res = await fetch('/api/gemini-advisor', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `Gemini fertilizer error ${res.status}`);
+  }
+  return res.json();
+}
+
+export function fetchIrrigationAdvisory(
+  lat: number,
+  lon: number,
+  crop: string,
+  sowingDate: string,
+  ndviMean?: number,
+  bulkDensity?: number,
+  organicCarbon?: number,
+): Promise<IrrigationAdvisory> {
+  const params: Record<string, string> = {
+    lat: String(lat),
+    lon: String(lon),
+    crop,
+    sowingDate,
+  };
+  if (ndviMean != null) params.ndviMean = String(ndviMean);
+  if (bulkDensity != null) params.bulkDensity = String(bulkDensity);
+  if (organicCarbon != null) params.organicCarbon = String(organicCarbon);
+  return apiGet<IrrigationAdvisory>('/api/irrigation', params);
+}
+
+export function fetchMandiPrices(
+  crop: string,
+  lat: number,
+  lon: number,
+): Promise<MandiResponse> {
+  return apiGet<MandiResponse>('/api/mandi', {
+    crop,
+    lat: String(lat),
+    lon: String(lon),
+  });
 }

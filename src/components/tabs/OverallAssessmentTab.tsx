@@ -10,6 +10,11 @@ export function OverallAssessmentTab() {
   const boundary = useFarmStore((s) => s.boundary);
   const ndvi = useFarmStore((s) => s.ndvi);
 
+  const sowingIntent = useFarmStore((s) => s.sowingIntent);
+  const geminiCropAdvice = useFarmStore((s) => s.geminiCropAdvice);
+  const geminiCropLoading = useFarmStore((s) => s.geminiCropLoading);
+  const geminiCropError = useFarmStore((s) => s.geminiCropError);
+
   const assessment = generateOverallAssessment(soil, weather, satellite, boundary, i18n.language, ndvi);
 
   const getScoreColor = (score: number) => {
@@ -58,6 +63,91 @@ export function OverallAssessmentTab() {
           </div>
         </div>
       </div>
+
+      {/* Gemini AI New Sowing Advice Card (if user selected New Sowing) */}
+      {sowingIntent === 'new' && (
+        <div className="rounded-2xl border border-field-300 bg-gradient-to-br from-field-50 to-white p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="rounded-full bg-field-600 p-1.5 text-white text-xs">✨</span>
+            <h4 className="font-bold text-earth-900 text-lg">
+              Gemini AI Crop Selection Advisor
+            </h4>
+            <span className="ml-auto text-xs font-semibold text-field-700 bg-field-100 border border-field-200 px-2.5 py-0.5 rounded-full">
+              NDVI + Weather + Soil Synthesized
+            </span>
+          </div>
+
+          {geminiCropLoading ? (
+            <div className="flex items-center gap-3 py-4">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-field-600 border-t-transparent" />
+              <span className="text-sm font-medium text-earth-700">Asking Gemini LLM for optimal crop selection...</span>
+            </div>
+          ) : geminiCropError ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
+              <p className="font-semibold">⚠️ Live AI advice fallback active:</p>
+              <p className="mt-0.5 text-amber-800">{geminiCropError}</p>
+            </div>
+          ) : geminiCropAdvice ? (
+            <div className="space-y-4">
+              {/* Top Choice Highlight */}
+              <div className="rounded-xl border border-field-200 bg-white p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <span className="text-xs font-semibold text-field-800 uppercase tracking-wider">Top Choice to Sow</span>
+                    <h5 className="text-2xl font-extrabold text-earth-900">{geminiCropAdvice.topCrop}</h5>
+                  </div>
+                  {geminiCropAdvice.bestSowingWindow && (
+                    <div className="text-right">
+                      <span className="text-xs text-earth-500">Best Sowing Window</span>
+                      <p className="text-sm font-bold text-field-700">📅 {geminiCropAdvice.bestSowingWindow}</p>
+                    </div>
+                  )}
+                </div>
+                <p className="mt-2 text-sm text-earth-700 leading-relaxed">{geminiCropAdvice.topCropReason}</p>
+              </div>
+
+              {/* Alternatives Grid */}
+              {geminiCropAdvice.alternatives && geminiCropAdvice.alternatives.length > 0 && (
+                <div>
+                  <h6 className="text-xs font-bold uppercase tracking-wider text-earth-500 mb-2">Alternative Sowing Choices</h6>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {geminiCropAdvice.alternatives.map((alt, idx) => (
+                      <div key={idx} className="rounded-lg border border-earth-200 bg-earth-50/50 p-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-earth-900 text-sm">{alt.crop}</span>
+                          <span className="rounded bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold">
+                            {alt.suitability} Suitability
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-earth-600">{alt.reason}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Key Risks */}
+              {geminiCropAdvice.keyRisks && geminiCropAdvice.keyRisks.length > 0 && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3.5 text-xs text-amber-900">
+                  <span className="font-bold">⚠️ Sowing Risks & Considerations:</span>
+                  <ul className="mt-1 list-disc list-inside space-y-0.5 text-amber-800">
+                    {geminiCropAdvice.keyRisks.map((risk, rIdx) => (
+                      <li key={rIdx}>{risk}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Summary Narrative */}
+              {geminiCropAdvice.summary && (
+                <p className="text-xs text-earth-600 italic border-t border-earth-100 pt-3">
+                  "{geminiCropAdvice.summary}"
+                </p>
+              )}
+            </div>
+          ) : null}
+        </div>
+      )}
 
       {/* NDVI Card */}
       {assessment.ndviStatus && (
@@ -178,7 +268,7 @@ export function OverallAssessmentTab() {
         </div>
       </div>
 
-      {/* Crop Suitability */}
+      {/* Crop Suitability Rules engine */}
       <div className="rounded-xl border border-earth-200 bg-white p-5 shadow-sm">
         <h4 className="font-bold text-earth-900 text-lg border-b border-earth-100 pb-3">
           🌾 {t('assessment.cropTitle', 'Recommended Crops & Agricultural Advice')}
@@ -202,7 +292,7 @@ export function OverallAssessmentTab() {
         </div>
       </div>
 
-      {/* Fertilizer & Irrigation */}
+      {/* Fertilizer & Irrigation Baseline */}
       <div className="grid gap-6 md:grid-cols-2">
         <div className="rounded-xl border border-earth-200 bg-white p-5 shadow-sm">
           <h4 className="font-bold text-earth-900 border-b border-earth-100 pb-3">

@@ -78,3 +78,89 @@ export interface SatelliteResponse {
   centroid: { lat: number; lon: number };
   captureDate: string;
 }
+
+// ─── Irrigation Advisory ──────────────────────────────────────────────────────
+
+export interface IrrigationDay {
+  date: string;
+  expectedRainMm: number;
+  et0: number;
+  irrigationMm: number;
+  advisory: string;
+}
+
+export interface IrrigationAdvisory {
+  crop: string;
+  sowingDate: string;
+  daysFromSowing: number;
+  growthStage: string;
+  days: IrrigationDay[];
+  totalIrrigation7Days: number;
+  totalRain7Days: number;
+  soilNote: string;
+}
+
+// ─── Fertilizer Advice ────────────────────────────────────────────────────────
+
+export interface FertilizerStep {
+  timing: string;
+  fertilizer: string;
+  npkGrade: string;
+  qtyPerHectare: string;
+  method: string;
+  notes: string;
+}
+
+export interface MicronutrientRec {
+  nutrient: string;
+  product: string;
+  dose: string;
+  timing: string;
+}
+
+export interface FertilizerAdvice {
+  schedule: FertilizerStep[];
+  micronutrients: MicronutrientRec[];
+  placementGuidance: string;
+  organicAmendments: string;
+  warnings: string[];
+  summary: string;
+}
+
+// ─── Gemini Crop Advice (new sowing) ──────────────────────────────────────────
+
+export interface CropAlternative {
+  crop: string;
+  suitability: string;
+  reason: string;
+}
+
+export interface GeminiCropAdvice {
+  topCrop: string;
+  topCropReason: string;
+  alternatives: CropAlternative[];
+  bestSowingWindow: string;
+  keyRisks: string[];
+  summary: string;
+}
+
+// ─── Mandi Prices ─────────────────────────────────────────────────────────────
+
+export interface MandiPrice {
+  market: string;
+  state: string;
+  district: string;
+  commodity: string;
+  variety: string;
+  arrivalDate: string;
+  minPrice: number;
+  modalPrice: number;
+  maxPrice: number;
+}
+
+export interface MandiResponse {
+  prices: MandiPrice[];
+  detectedState: string;
+  source: 'agmarknet' | 'fallback';
+  note?: string;
+}

@@ -1,0 +1,170 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+interface GeminiAdvisorRequest {
+  lat: number;
+  lon: number;
+  mode: 'new_sowing' | 'fertilizer';
+  ndviMean?: number;
+  soilPh?: number;
+  soilTexture?: string;
+  soilOC?: number;
+  soilBD?: number;
+  soilN?: number;
+  rainfall16Days?: number;
+  temperature?: number;
+  humidity?: number;
+  region?: string;
+  crop?: string;
+  sowingDate?: string;
+  areaHectares?: number;
+}
+
+function buildNewSowingPrompt(body: GeminiAdvisorRequest): string {
+  const currentDate = new Date().toISOString().slice(0, 10);
+  const region = body.region || `lat ${body.lat?.toFixed(2)}, lon ${body.lon?.toFixed(2)} (India)`;
+  return `You are a senior Indian agricultural scientist. A farmer in ${region} wants to know the best crop to sow this season.
+
+Field Data (real-time from satellites and sensors):
+- NDVI (Vegetation Index): ${body.ndviMean != null ? body.ndviMean.toFixed(3) : 'unknown'}
+- Soil pH: ${body.soilPh != null ? body.soilPh.toFixed(1) : 'unknown'}
+- Soil Texture: ${body.soilTexture || 'unknown'}
+- Soil Organic Carbon: ${body.soilOC != null ? body.soilOC.toFixed(2) + ' g/kg' : 'unknown'}
+- Soil Bulk Density: ${body.soilBD != null ? body.soilBD.toFixed(2) + ' kg/dm³' : 'unknown'}
+- Soil Nitrogen: ${body.soilN != null ? body.soilN.toFixed(2) + ' g/kg' : 'unknown'}
+- 16-Day Cumulative Rainfall: ${body.rainfall16Days != null ? body.rainfall16Days.toFixed(1) + ' mm' : 'unknown'}
+- Current Temperature: ${body.temperature != null ? body.temperature.toFixed(1) + '°C' : 'unknown'}
+- Current Humidity: ${body.humidity != null ? body.humidity.toFixed(0) + '%' : 'unknown'}
+- Farm Area: ${body.areaHectares != null ? body.areaHectares.toFixed(2) + ' hectares' : 'unknown'}
+- Current Date: ${currentDate}
+
+Based on these signals, provide your best agronomic recommendation. Consider:
+1. Season (Kharif/Rabi/Zaid) based on current date and region
+2. Soil suitability for each crop
+3. Water availability from rainfall and NDVI
+4. Temperature requirements
+
+Provide your response in this EXACT JSON format (no markdown, no code blocks, pure JSON):
+{
+  "topCrop": "name of single best crop to sow",
+  "topCropReason": "2-3 detailed sentences explaining why this is the best choice, citing specific NDVI, soil pH, rainfall, and temperature signals",
+  "alternatives": [
+    { "crop": "second best crop", "suitability": "High", "reason": "1-2 sentence reason based on field data" },
+    { "crop": "third best crop", "suitability": "Medium", "reason": "1-2 sentence reason based on field data" }
+  ],
+  "bestSowingWindow": "specific date range e.g. September 5-20, 2025",
+  "keyRisks": ["specific risk 1 based on data", "specific risk 2 based on data"],
+  "summary": "3-4 sentence narrative recommendation the farmer can act on immediately"
+}`;
+}
+
+function buildFertilizerPrompt(body: GeminiAdvisorRequest): string {
+  const currentDate = new Date().toISOString().slice(0, 10);
+  const region = body.region || `lat ${body.lat?.toFixed(2)}, lon ${body.lon?.toFixed(2)} (India)`;
+  const crop = body.crop || 'unknown crop';
+  const sowingDate = body.sowingDate || 'unknown';
+  let daysElapsed = 0;
+  if (body.sowingDate) {
+    daysElapsed = Math.floor((Date.now() - new Date(body.sowingDate).getTime()) / (1000 * 60 * 60 * 24));
+  }
+
+  return `You are a senior Indian agronomist and crop nutrition expert. A farmer in ${region} is growing ${crop}, sown on ${sowingDate} (${daysElapsed} days ago) on a ${body.areaHectares?.toFixed(2) ?? 'unknown'} hectare farm.
+
+Current Field Data (from satellites and sensors):
+- Soil pH: ${body.soilPh != null ? body.soilPh.toFixed(1) : 'unknown'}
+- Soil Texture: ${body.soilTexture || 'unknown'}
+- Organic Carbon: ${body.soilOC != null ? body.soilOC.toFixed(2) + ' g/kg' : 'unknown'}
+- Bulk Density: ${body.soilBD != null ? body.soilBD.toFixed(2) + ' kg/dm³' : 'unknown'}
+- Soil Nitrogen: ${body.soilN != null ? body.soilN.toFixed(2) + ' g/kg' : 'unknown'}
+- NDVI: ${body.ndviMean != null ? body.ndviMean.toFixed(3) : 'unknown'}
+- 16-Day Rainfall: ${body.rainfall16Days != null ? body.rainfall16Days.toFixed(1) + ' mm' : 'unknown'}
+- Current Date: ${currentDate}
+
+Provide a detailed, practical fertilizer advisory suitable for an Indian farmer using government-recognized fertilizers (DAP, Urea, MOP, NPK grades like 12:32:16, 10:26:26, etc.) available in Indian markets.
+
+Respond in this EXACT JSON format (no markdown, no code blocks, pure JSON):
+{
+  "schedule": [
+    {
+      "timing": "e.g. At sowing (Basal) / 21 DAS (Days After Sowing) / 45 DAS",
+      "fertilizer": "e.g. DAP (Di-Ammonium Phosphate)",
+      "npkGrade": "e.g. 18-46-0",
+      "qtyPerHectare": "e.g. 100 kg/ha",
+      "method": "e.g. Basal broadcast / Top-dress by hand / Fertigation",
+      "notes": "e.g. Mix into top 5 cm before sowing; do not apply in standing water"
+    }
+  ],
+  "micronutrients": [
+    { "nutrient": "e.g. Zinc", "product": "e.g. Zinc Sulphate 21%", "dose": "e.g. 25 kg/ha", "timing": "e.g. Basal at sowing" }
+  ],
+  "placementGuidance": "2-3 sentences: where exactly to apply each fertilizer (row/furrow/broadcast/banding depth), and why",
+  "organicAmendments": "1-2 sentences on FYM / vermicompost / biofertilizer (Rhizobium/PSB) recommendations if applicable",
+  "warnings": ["warning 1 specific to soil data", "warning 2 specific to crop stage"],
+  "summary": "3-4 sentence narrative the farmer can understand and act on immediately"
+}`;
+}
+
+async function callGemini(prompt: string, apiKey: string): Promise<object> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 1024,
+        responseMimeType: 'application/json',
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => String(response.status));
+    throw new Error(`Gemini API error ${response.status}: ${errText}`);
+  }
+
+  const geminiData = await response.json();
+  const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!rawText) throw new Error('Empty response from Gemini API');
+
+  // Strip potential markdown fencing
+  const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+  return JSON.parse(cleaned);
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed. Use POST.' });
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(503).json({
+      error: 'GEMINI_API_KEY not configured. Add it in Vercel environment variables.',
+    });
+  }
+
+  const body = req.body as GeminiAdvisorRequest;
+  if (!body || !body.mode) {
+    return res.status(400).json({ error: 'Request body with "mode" field is required.' });
+  }
+
+  let prompt: string;
+  if (body.mode === 'new_sowing') {
+    prompt = buildNewSowingPrompt(body);
+  } else if (body.mode === 'fertilizer') {
+    if (!body.crop) return res.status(400).json({ error: '"crop" is required for fertilizer mode.' });
+    prompt = buildFertilizerPrompt(body);
+  } else {
+    return res.status(400).json({ error: 'Invalid mode. Use "new_sowing" or "fertilizer".' });
+  }
+
+  try {
+    const result = await callGemini(prompt, apiKey);
+    return res.status(200).json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    return res.status(500).json({ error: message });
+  }
+}

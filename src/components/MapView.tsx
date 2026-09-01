@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import L from 'leaflet';
 import '@geoman-io/leaflet-geoman-free';
 import type { Feature, Polygon } from 'geojson';
@@ -6,6 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { useFarmStore } from '../store/farmStore';
 import { analyzePolygon } from '../utils/geo';
 import { LocationSearch } from './LocationSearch';
+import { FarmlandPanel } from './FarmlandPanel';
+import { IntentModal } from './IntentModal';
 
 const INDIA_CENTER: L.LatLngExpression = [20.5937, 78.9629];
 const DEFAULT_ZOOM = 5;
@@ -21,7 +23,7 @@ function layerToFeature(layer: L.Layer): Feature<Polygon> | null {
 }
 
 interface MapViewProps {
-  onConfirm: () => void;
+  onConfirm: (intent: 'new' | 'update', crop?: string, sowingDate?: string) => void;
 }
 
 export function MapView({ onConfirm }: MapViewProps) {
@@ -33,6 +35,11 @@ export function MapView({ onConfirm }: MapViewProps) {
   const boundary = useFarmStore((s) => s.boundary);
   const setBoundary = useFarmStore((s) => s.setBoundary);
   const setLocationName = useFarmStore((s) => s.setLocationName);
+  const setSowingIntent = useFarmStore((s) => s.setSowingIntent);
+  const setSelectedCrop = useFarmStore((s) => s.setSelectedCrop);
+  const setSowingDate = useFarmStore((s) => s.setSowingDate);
+
+  const [showIntentModal, setShowIntentModal] = useState(false);
 
   const updateBoundaryFromLayer = useCallback(
     (layer: L.Layer) => {
@@ -190,6 +197,27 @@ export function MapView({ onConfirm }: MapViewProps) {
     setBoundary(null);
   }, [setBoundary]);
 
+  const handleScanClick = useCallback(() => {
+    if (!boundary?.isValid) return;
+    setShowIntentModal(true);
+  }, [boundary]);
+
+  const handleIntentNewSowing = useCallback(() => {
+    setShowIntentModal(false);
+    setSowingIntent('new');
+    setSelectedCrop(null);
+    setSowingDate(null);
+    onConfirm('new');
+  }, [onConfirm, setSowingIntent, setSelectedCrop, setSowingDate]);
+
+  const handleIntentCropUpdate = useCallback((crop: string, sowingDate: string) => {
+    setShowIntentModal(false);
+    setSowingIntent('update');
+    setSelectedCrop(crop);
+    setSowingDate(sowingDate);
+    onConfirm('update', crop, sowingDate);
+  }, [onConfirm, setSowingIntent, setSelectedCrop, setSowingDate]);
+
   const locale = i18n.language.startsWith('hi') ? 'hi-IN' : 'en-IN';
 
   return (
@@ -255,24 +283,29 @@ export function MapView({ onConfirm }: MapViewProps) {
             </p>
           )}
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={onConfirm}
-              disabled={!boundary.isValid}
-              className="rounded-lg bg-field-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-field-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {t('map.confirmBoundary')}
-            </button>
+          <div className="mt-4">
+            <FarmlandPanel onScan={handleScanClick} />
+          </div>
+
+          {boundary.isValid && (
             <button
               type="button"
               onClick={handleClear}
-              className="rounded-lg border border-earth-200 px-5 py-2.5 text-sm font-medium text-earth-700 hover:bg-earth-50"
+              className="mt-3 rounded-lg border border-earth-200 px-5 py-2 text-sm font-medium text-earth-700 hover:bg-earth-50"
             >
               {t('map.clearBoundary')}
             </button>
-          </div>
+          )}
         </div>
+      )}
+
+      {/* Intent Modal */}
+      {showIntentModal && (
+        <IntentModal
+          onNewSowing={handleIntentNewSowing}
+          onCropUpdate={handleIntentCropUpdate}
+          onCancel={() => setShowIntentModal(false)}
+        />
       )}
     </section>
   );

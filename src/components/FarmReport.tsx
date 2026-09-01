@@ -3,9 +3,28 @@ import { useFarmStore, type ReportTab } from '../store/farmStore';
 import { OverallAssessmentTab } from './tabs/OverallAssessmentTab';
 import { WeatherTab } from './tabs/WeatherTab';
 import { SatelliteTab } from './tabs/SatelliteTab';
+import { IrrigationAdvisoryTab } from './tabs/IrrigationAdvisoryTab';
+import { FertilizerTab } from './tabs/FertilizerTab';
+import { MandiPricesTab } from './tabs/MandiPricesTab';
 import { formatNumber } from '../utils/geo';
+import { fetchMandiPrices } from '../utils/api';
 
-const TABS: ReportTab[] = ['assessment', 'weather', 'satellite'];
+type TabConfig = {
+  id: ReportTab;
+  labelKey: string;
+  fallback: string;
+  icon: string;
+  onlyForUpdate?: boolean;
+};
+
+const ALL_TABS: TabConfig[] = [
+  { id: 'assessment', labelKey: 'report.tabs.assessment', fallback: 'Overall', icon: '📊' },
+  { id: 'weather', labelKey: 'report.tabs.weather', fallback: 'Weather', icon: '☁️' },
+  { id: 'satellite', labelKey: 'report.tabs.satellite', fallback: 'Satellite', icon: '🛰️' },
+  { id: 'irrigation', labelKey: 'report.tabs.irrigation', fallback: 'Irrigation', icon: '💧', onlyForUpdate: true },
+  { id: 'fertilizer', labelKey: 'report.tabs.fertilizer', fallback: 'Fertilizer', icon: '🧪', onlyForUpdate: true },
+  { id: 'mandi', labelKey: 'report.tabs.mandi', fallback: 'Mandi Prices', icon: '🏪' },
+];
 
 export function FarmReport() {
   const { t, i18n } = useTranslation();
@@ -21,6 +40,41 @@ export function FarmReport() {
   const weatherError = useFarmStore((s) => s.weatherError);
   const satelliteError = useFarmStore((s) => s.satelliteError);
   const resetReport = useFarmStore((s) => s.resetReport);
+  const sowingIntent = useFarmStore((s) => s.sowingIntent);
+  const selectedCrop = useFarmStore((s) => s.selectedCrop);
+  const irrigationAdvisory = useFarmStore((s) => s.irrigationAdvisory);
+  const irrigationLoading = useFarmStore((s) => s.irrigationLoading);
+  const irrigationError = useFarmStore((s) => s.irrigationError);
+  const fertilizerAdvice = useFarmStore((s) => s.fertilizerAdvice);
+  const fertilizerLoading = useFarmStore((s) => s.fertilizerLoading);
+  const fertilizerError = useFarmStore((s) => s.fertilizerError);
+  const mandiResponse = useFarmStore((s) => s.mandiResponse);
+  const mandiLoading = useFarmStore((s) => s.mandiLoading);
+  const mandiError = useFarmStore((s) => s.mandiError);
+  const setMandiResponse = useFarmStore((s) => s.setMandiResponse);
+  const setMandiLoading = useFarmStore((s) => s.setMandiLoading);
+  const setMandiError = useFarmStore((s) => s.setMandiError);
+
+  // Compute visible tabs based on intent
+  const visibleTabs = ALL_TABS.filter((tab) => {
+    if (tab.onlyForUpdate) return sowingIntent === 'update';
+    return true;
+  });
+
+  const handleMandiRefresh = async () => {
+    if (!boundary) return;
+    setMandiLoading(true);
+    setMandiError(null);
+    const crop = selectedCrop ?? 'Wheat';
+    try {
+      const data = await fetchMandiPrices(crop, boundary.centroid[0], boundary.centroid[1]);
+      setMandiResponse(data);
+    } catch (err) {
+      setMandiError(err instanceof Error ? err.message : 'Failed to load mandi prices');
+    } finally {
+      setMandiLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -28,6 +82,9 @@ export function FarmReport() {
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-field-600 border-t-transparent" />
           <p className="font-medium text-earth-700">{t('report.loading', 'Loading live accredited scan data…')}</p>
+          {sowingIntent === 'update' && (
+            <p className="text-xs text-earth-500">Fetching irrigation advisory + fertilizer advice…</p>
+          )}
         </div>
       </div>
     );
@@ -54,7 +111,19 @@ export function FarmReport() {
     <section id="farm-report-content" className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-earth-900">{t('report.title')}</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-2xl font-bold text-earth-900">{t('report.title')}</h2>
+            {sowingIntent === 'update' && selectedCrop && (
+              <span className="rounded-full bg-blue-100 border border-blue-200 px-2.5 py-0.5 text-xs font-semibold text-blue-800">
+                💧 Crop Update: {selectedCrop}
+              </span>
+            )}
+            {sowingIntent === 'new' && (
+              <span className="rounded-full bg-field-100 border border-field-200 px-2.5 py-0.5 text-xs font-semibold text-field-800">
+                🌾 New Sowing Advisory
+              </span>
+            )}
+          </div>
           {locationName && (
             <p className="mt-1 text-sm text-earth-600">
               {t('report.location')}: {locationName}
@@ -77,30 +146,57 @@ export function FarmReport() {
         </div>
       </div>
 
+      {/* Tab Navigation */}
       <div className="no-print flex gap-1 overflow-x-auto rounded-xl border border-earth-200 bg-earth-100/60 p-1">
-        {TABS.map((tab) => (
+        {visibleTabs.map((tab) => (
           <button
-            key={tab}
+            key={tab.id}
             type="button"
-            onClick={() => setActiveTab(tab)}
-            className={`shrink-0 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === tab
+            onClick={() => setActiveTab(tab.id)}
+            className={`shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              activeTab === tab.id
                 ? 'bg-white text-field-800 shadow-xs font-bold'
                 : 'text-earth-600 hover:text-earth-900'
             }`}
           >
-            {t(`report.tabs.${tab}`, tab === 'assessment' ? 'Overall Assessment' : tab)}
+            <span className="mr-1">{tab.icon}</span>
+            {t(tab.labelKey, tab.fallback)}
           </button>
         ))}
       </div>
 
+      {/* Active Tab Content */}
       <div className="rounded-xl border border-earth-200 bg-white p-4 sm:p-6 shadow-xs">
         {activeTab === 'assessment' && <OverallAssessmentTab />}
         {activeTab === 'weather' && <WeatherTab data={weather} error={weatherError} />}
         {activeTab === 'satellite' && <SatelliteTab data={satellite} error={satelliteError} />}
+        {activeTab === 'irrigation' && (
+          <IrrigationAdvisoryTab
+            data={irrigationAdvisory}
+            loading={irrigationLoading}
+            error={irrigationError}
+          />
+        )}
+        {activeTab === 'fertilizer' && (
+          <FertilizerTab
+            data={fertilizerAdvice}
+            loading={fertilizerLoading}
+            error={fertilizerError}
+            crop={selectedCrop}
+          />
+        )}
+        {activeTab === 'mandi' && (
+          <MandiPricesTab
+            data={mandiResponse}
+            loading={mandiLoading}
+            error={mandiError}
+            crop={selectedCrop}
+            onRefresh={handleMandiRefresh}
+          />
+        )}
       </div>
 
-      {/* Print view: show tabs stacked */}
+      {/* Print view: tabs stacked */}
       <div className="print-only space-y-8">
         <div>
           <h3 className="mb-4 text-lg font-bold">{t('report.tabs.assessment', 'Overall Assessment')}</h3>
@@ -114,6 +210,18 @@ export function FarmReport() {
           <h3 className="mb-4 text-lg font-bold">{t('report.tabs.satellite')}</h3>
           <SatelliteTab data={satellite} error={satelliteError} />
         </div>
+        {sowingIntent === 'update' && (
+          <>
+            <div>
+              <h3 className="mb-4 text-lg font-bold">💧 Irrigation Advisory</h3>
+              <IrrigationAdvisoryTab data={irrigationAdvisory} loading={false} error={null} />
+            </div>
+            <div>
+              <h3 className="mb-4 text-lg font-bold">🧪 Fertilizer Plan</h3>
+              <FertilizerTab data={fertilizerAdvice} loading={false} error={null} crop={selectedCrop} />
+            </div>
+          </>
+        )}
         <div className="pt-4 text-center text-xs text-earth-500">
           {t('footer.attribution', 'Imagery from Esri, other data from OpenStreetMap contributors · Contains modified Copernicus Sentinel data · Soil data © ISRIC SoilGrids · Weather data © Open-Meteo')}
         </div>
