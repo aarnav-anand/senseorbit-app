@@ -31,7 +31,7 @@ export function MapView({ onConfirm }: MapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const polygonLayerRef = useRef<L.Polygon | null>(null);
-  const geomanInitialized = useRef(false);
+
   const boundary = useFarmStore((s) => s.boundary);
   const setBoundary = useFarmStore((s) => s.setBoundary);
   const setLocationName = useFarmStore((s) => s.setLocationName);
@@ -40,6 +40,7 @@ export function MapView({ onConfirm }: MapViewProps) {
   const setSowingDate = useFarmStore((s) => s.setSowingDate);
 
   const [showIntentModal, setShowIntentModal] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
 
   const updateBoundaryFromLayer = useCallback(
     (layer: L.Layer) => {
@@ -61,16 +62,21 @@ export function MapView({ onConfirm }: MapViewProps) {
         centroid: analysis.centroid,
         isValid: analysis.isValid,
       });
+      setIsDrawing(false);
     },
     [setBoundary],
   );
 
+  // Initialize Map and Geoman Controls together in a single robust useEffect
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
+    const initialCenter = boundary ? boundary.centroid : INDIA_CENTER;
+    const initialZoom = boundary ? 15 : DEFAULT_ZOOM;
+
     const map = L.map(mapContainerRef.current, {
-      center: INDIA_CENTER,
-      zoom: DEFAULT_ZOOM,
+      center: initialCenter,
+      zoom: initialZoom,
       zoomControl: true,
     });
 
@@ -96,36 +102,18 @@ export function MapView({ onConfirm }: MapViewProps) {
       )
       .addTo(map);
 
-    mapRef.current = map;
-
-    const resizeTimeout = setTimeout(() => {
-      map.invalidateSize();
-    }, 100);
-
-    return () => {
-      clearTimeout(resizeTimeout);
-      map.remove();
-      mapRef.current = null;
-      geomanInitialized.current = false;
-      polygonLayerRef.current = null;
-    };
-  }, [t]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || geomanInitialized.current) return;
-
+    // Setup Leaflet-Geoman controls
     map.pm.addControls({
       position: 'topleft',
       drawMarker: false,
       drawCircleMarker: false,
       drawPolyline: false,
-      drawRectangle: false,
+      drawRectangle: true,
+      drawPolygon: true,
       drawCircle: false,
       drawText: false,
-      drawPolygon: true,
       editMode: true,
-      dragMode: false,
+      dragMode: true,
       cutPolygon: false,
       removalMode: true,
       rotateMode: false,
@@ -148,26 +136,62 @@ export function MapView({ onConfirm }: MapViewProps) {
     const onRemove = () => {
       polygonLayerRef.current = null;
       setBoundary(null);
+      setIsDrawing(false);
     };
 
     map.on('pm:create', onCreate);
     map.on('pm:edit', onEdit);
     map.on('pm:remove', onRemove);
 
-    geomanInitialized.current = true;
+    mapRef.current = map;
+
+    // Render initial boundary if present (e.g. loaded from saved farm)
+    if (boundary?.polygon) {
+      const geoLayer = L.geoJSON(boundary.polygon, {
+        style: { color: '#16a34a', weight: 3, fillOpacity: 0.25 },
+      }).addTo(map);
+      const layers = geoLayer.getLayers();
+      if (layers.length > 0 && layers[0] instanceof L.Polygon) {
+        polygonLayerRef.current = layers[0] as L.Polygon;
+      }
+    }
+
+    const resizeTimeout = setTimeout(() => {
+      map.invalidateSize();
+    }, 150);
 
     return () => {
+      clearTimeout(resizeTimeout);
       map.off('pm:create', onCreate);
       map.off('pm:edit', onEdit);
       map.off('pm:remove', onRemove);
-      map.pm.removeControls();
-      geomanInitialized.current = false;
+      map.remove();
+      mapRef.current = null;
+      polygonLayerRef.current = null;
     };
-  }, [setBoundary, updateBoundaryFromLayer]);
+  }, [boundary, setBoundary, t, updateBoundaryFromLayer]);
+
+  const handleStartDrawing = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.pm.enableDraw('Polygon', {
+      snappable: true,
+      snapDistance: 20,
+      allowSelfIntersection: false,
+    });
+    setIsDrawing(true);
+  }, []);
+
+  const handleStopDrawing = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.pm.disableDraw();
+    setIsDrawing(false);
+  }, []);
 
   const handleLocationSelect = useCallback(
     (lat: number, lon: number, name: string) => {
-      mapRef.current?.setView([lat, lon], 14);
+      mapRef.current?.setView([lat, lon], 15);
       setLocationName(name);
     },
     [setLocationName],
@@ -194,7 +218,11 @@ export function MapView({ onConfirm }: MapViewProps) {
       mapRef.current?.removeLayer(polygonLayerRef.current);
       polygonLayerRef.current = null;
     }
+    if (mapRef.current) {
+      mapRef.current.pm.disableDraw();
+    }
     setBoundary(null);
+    setIsDrawing(false);
   }, [setBoundary]);
 
   const handleScanClick = useCallback(() => {
@@ -223,10 +251,11 @@ export function MapView({ onConfirm }: MapViewProps) {
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <h2 className="text-xl font-semibold text-earth-900">{t('map.title')}</h2>
+        <h2 className="text-xl font-bold text-earth-900">{t('map.title')}</h2>
         <p className="mt-1 text-sm text-earth-600">{t('map.subtitle')}</p>
       </div>
 
+      {/* Location Search Bar */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
         <LocationSearch onSelect={handleLocationSelect} />
         <button
@@ -238,64 +267,93 @@ export function MapView({ onConfirm }: MapViewProps) {
         </button>
       </div>
 
-      <p className="text-xs text-earth-500">{t('map.drawHint')}</p>
+      {/* Prominent Action Toolbar for Drawing */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-field-200 bg-gradient-to-r from-field-50 to-white p-3.5 shadow-xs">
+        <div className="flex items-center gap-2">
+          {!isDrawing ? (
+            <button
+              type="button"
+              onClick={handleStartDrawing}
+              className="inline-flex items-center gap-2 rounded-xl bg-field-600 px-5 py-2.5 text-sm font-extrabold text-white shadow-md hover:bg-field-700 transition-all hover:scale-105"
+            >
+              ✏️ {t('map.startDrawing', 'Draw Farm Polygon')}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleStopDrawing}
+              className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-5 py-2.5 text-sm font-bold text-white shadow-md hover:bg-amber-700"
+            >
+              🛑 {t('map.stopDrawing', 'Stop Drawing')}
+            </button>
+          )}
 
+          {boundary && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="rounded-xl border border-earth-200 bg-white px-4 py-2.5 text-sm font-semibold text-earth-700 hover:bg-earth-50"
+            >
+              🗑️ {t('map.clearBoundary')}
+            </button>
+          )}
+        </div>
+
+        <span className="text-xs text-earth-600 font-medium">
+          {isDrawing
+            ? '👇 Tap on the map to place boundary corners. Click the first point to complete the farm shape.'
+            : 'Click "Draw Farm Polygon" to start outlining your field boundary.'}
+        </span>
+      </div>
+
+      {/* Leaflet Map Canvas */}
       <div
         ref={mapContainerRef}
-        className="h-[50vh] min-h-[320px] w-full overflow-hidden rounded-xl border border-earth-200 shadow-sm sm:h-[55vh]"
+        className="h-[52vh] min-h-[350px] w-full overflow-hidden rounded-2xl border border-earth-200 shadow-md sm:h-[58vh]"
         aria-label={t('map.title')}
       />
 
+      {/* Boundary Details & Farmland Action Panel */}
       {boundary && (
-        <div className="rounded-xl border border-earth-200 bg-white p-4 shadow-sm">
-          <div className="grid gap-2 text-sm sm:grid-cols-3">
-            <div>
-              <span className="text-earth-500">{t('map.area')}: </span>
-              <span className="font-medium">
+        <div className="rounded-2xl border border-earth-200 bg-white p-5 shadow-sm space-y-4">
+          <div className="grid gap-3 text-sm sm:grid-cols-3">
+            <div className="rounded-xl bg-field-50/60 p-3 border border-field-100">
+              <span className="text-earth-500 text-xs block">{t('map.area')}:</span>
+              <span className="font-bold text-earth-900 text-base">
                 {boundary.areaHectares.toLocaleString(locale, { maximumFractionDigits: 2 })}{' '}
                 {t('map.hectares')} /{' '}
                 {boundary.areaAcres.toLocaleString(locale, { maximumFractionDigits: 2 })}{' '}
                 {t('map.acres')}
               </span>
             </div>
-            <div>
-              <span className="text-earth-500">{t('map.centroid')}: </span>
-              <span className="font-medium">
+            <div className="rounded-xl bg-earth-50 p-3 border border-earth-100">
+              <span className="text-earth-500 text-xs block">{t('map.centroid')}:</span>
+              <span className="font-bold text-earth-900 text-base">
                 {boundary.centroid[0].toFixed(4)}, {boundary.centroid[1].toFixed(4)}
               </span>
             </div>
           </div>
 
           {!boundary.isValid && (
-            <p className="mt-2 text-sm text-amber-700">
-              {analyzePolygon(boundary.polygon).hasSelfIntersection
+            <p className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800 font-medium">
+              ⚠️ {analyzePolygon(boundary.polygon).hasSelfIntersection
                 ? t('map.invalidPolygon')
                 : t('map.polygonTooSmall')}
             </p>
           )}
 
           {boundary.isValid && analyzePolygon(boundary.polygon).exceedsNdviLimit && (
-            <p className="mt-2 text-sm text-blue-700">
-              {t(
+            <p className="rounded-xl bg-blue-50 border border-blue-200 p-3 text-xs text-blue-800 font-medium">
+              ℹ️ {t(
                 'map.ndviAreaClamped',
                 'Your boundary is larger than 3,000 ha. NDVI vegetation data will be sampled from a 100 ha area at the farm centre.',
               )}
             </p>
           )}
 
-          <div className="mt-4">
+          <div>
             <FarmlandPanel onScan={handleScanClick} />
           </div>
-
-          {boundary.isValid && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="mt-3 rounded-lg border border-earth-200 px-5 py-2 text-sm font-medium text-earth-700 hover:bg-earth-50"
-            >
-              {t('map.clearBoundary')}
-            </button>
-          )}
         </div>
       )}
 

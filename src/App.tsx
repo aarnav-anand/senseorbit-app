@@ -5,6 +5,7 @@ import { Dashboard } from './components/Dashboard';
 import { MapView } from './components/MapView';
 import { FarmReport } from './components/FarmReport';
 import { LoginPage } from './components/LoginPage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useFarmStore } from './store/farmStore';
 import {
   fetchFullReport,
@@ -64,8 +65,6 @@ export default function App() {
       const [lat, lon] = currentBoundary.centroid;
 
       setLoadingReport(true);
-      setCurrentView('report');
-      setShowReport(true);
       setReportError(null);
       setActiveTab(intent === 'update' ? 'irrigation' : 'assessment');
 
@@ -73,6 +72,8 @@ export default function App() {
         const waterCheck = await fetchWaterCheck(lat, lon);
         if (waterCheck.isWater) {
           setLoadingReport(false);
+          setCurrentView('map');
+          setShowReport(false);
           setWaterBodyError(
             t(
               'map.waterBodyRejected',
@@ -84,6 +85,10 @@ export default function App() {
       } catch (waterErr) {
         console.warn('Water body check failed, continuing scan:', waterErr);
       }
+
+      // Switch to report view now that water check has passed
+      setCurrentView('report');
+      setShowReport(true);
 
       try {
         const [data, ndviResult] = await Promise.all([
@@ -273,18 +278,20 @@ export default function App() {
       )}
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
-        {currentView === 'dashboard' && (
-          <Dashboard
-            onStartScan={(intent, crop, sowingDate) => handleConfirmBoundary(intent, crop, sowingDate)}
-            onCreateNewFarm={() => setCurrentView('map')}
-          />
-        )}
-        {currentView === 'map' && (
-          <MapView onConfirm={handleConfirmBoundary} />
-        )}
-        {currentView === 'report' && (
-          <FarmReport />
-        )}
+        <ErrorBoundary>
+          {currentView === 'dashboard' && (
+            <Dashboard
+              onStartScan={(intent, crop, sowingDate) => handleConfirmBoundary(intent, crop, sowingDate)}
+              onCreateNewFarm={() => setCurrentView('map')}
+            />
+          )}
+          {currentView === 'map' && (
+            <MapView onConfirm={handleConfirmBoundary} />
+          )}
+          {currentView === 'report' && (
+            <FarmReport />
+          )}
+        </ErrorBoundary>
       </main>
 
       <footer className="no-print mt-auto border-t border-earth-200 bg-white py-4 text-center text-xs text-earth-500">
