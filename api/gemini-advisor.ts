@@ -104,33 +104,46 @@ Respond in this EXACT JSON format (no markdown, no code blocks, pure JSON):
 }
 
 async function callGemini(prompt: string, apiKey: string): Promise<object> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const models = ['gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+  let lastError: Error | null = null;
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: 1024,
-        responseMimeType: 'application/json',
-      },
-    }),
-  });
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 1024,
+            responseMimeType: 'application/json',
+          },
+        }),
+      });
 
-  if (!response.ok) {
-    const errText = await response.text().catch(() => String(response.status));
-    throw new Error(`Gemini API error ${response.status}: ${errText}`);
+      if (!response.ok) {
+        const errText = await response.text().catch(() => String(response.status));
+        lastError = new Error(`Gemini (${model}) error ${response.status}: ${errText}`);
+        continue;
+      }
+
+      const geminiData = await response.json();
+      const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) {
+        lastError = new Error(`Empty response from Gemini model ${model}`);
+        continue;
+      }
+
+      const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+      return JSON.parse(cleaned);
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+    }
   }
 
-  const geminiData = await response.json();
-  const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!rawText) throw new Error('Empty response from Gemini API');
-
-  // Strip potential markdown fencing
-  const cleaned = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
-  return JSON.parse(cleaned);
+  throw lastError ?? new Error('Failed to query Gemini API');
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

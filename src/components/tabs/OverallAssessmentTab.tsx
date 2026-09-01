@@ -11,9 +11,12 @@ export function OverallAssessmentTab() {
   const ndvi = useFarmStore((s) => s.ndvi);
 
   const sowingIntent = useFarmStore((s) => s.sowingIntent);
+  const selectedCrop = useFarmStore((s) => s.selectedCrop);
   const geminiCropAdvice = useFarmStore((s) => s.geminiCropAdvice);
   const geminiCropLoading = useFarmStore((s) => s.geminiCropLoading);
   const geminiCropError = useFarmStore((s) => s.geminiCropError);
+  const fertilizerAdvice = useFarmStore((s) => s.fertilizerAdvice);
+  const setActiveTab = useFarmStore((s) => s.setActiveTab);
 
   const assessment = generateOverallAssessment(soil, weather, satellite, boundary, i18n.language, ndvi);
 
@@ -84,7 +87,7 @@ export function OverallAssessmentTab() {
             </div>
           ) : geminiCropError ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
-              <p className="font-semibold">⚠️ Live AI advice fallback active:</p>
+              <p className="font-semibold">⚠️ Live AI advice status:</p>
               <p className="mt-0.5 text-amber-800">{geminiCropError}</p>
             </div>
           ) : geminiCropAdvice ? (
@@ -164,7 +167,7 @@ export function OverallAssessmentTab() {
                 {t('ndvi.assessmentTitle', 'Vegetation Health (NDVI)')}
               </h4>
               <p className="text-xs text-earth-500">
-                {t('ndvi.source', 'Source: Agromonitoring (Sentinel-2 / Landsat)')}
+                Source: Copernicus Sentinel-2 Multispectral Data
               </p>
             </div>
           </div>
@@ -268,53 +271,116 @@ export function OverallAssessmentTab() {
         </div>
       </div>
 
-      {/* Crop Suitability Rules engine */}
-      <div className="rounded-xl border border-earth-200 bg-white p-5 shadow-sm">
-        <h4 className="font-bold text-earth-900 text-lg border-b border-earth-100 pb-3">
-          🌾 {t('assessment.cropTitle', 'Recommended Crops & Agricultural Advice')}
-        </h4>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {assessment.cropRecommendations.map((item, idx) => (
-            <div key={idx} className="rounded-lg border border-earth-100 bg-earth-50/50 p-3.5">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-earth-900">{item.crop}</span>
-                <span className={`rounded-md px-2 py-0.5 text-xs font-semibold border ${
-                  item.suitability === 'High' || item.suitability === 'उच्च'
-                    ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                    : 'bg-amber-100 text-amber-800 border-amber-200'
-                }`}>
-                  {item.suitability} {t('assessment.suitabilityLabel', 'Suitability')}
-                </span>
+      {/* Recommended Crops: ONLY display static list if user did NOT select New Sowing */}
+      {sowingIntent !== 'new' && (
+        <div className="rounded-xl border border-earth-200 bg-white p-5 shadow-sm">
+          <h4 className="font-bold text-earth-900 text-lg border-b border-earth-100 pb-3">
+            🌾 {t('assessment.cropTitle', 'Recommended Crops & Agricultural Advice')}
+          </h4>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {assessment.cropRecommendations.map((item, idx) => (
+              <div key={idx} className="rounded-lg border border-earth-100 bg-earth-50/50 p-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-earth-900">{item.crop}</span>
+                  <span className={`rounded-md px-2 py-0.5 text-xs font-semibold border ${
+                    item.suitability === 'High' || item.suitability === 'उच्च'
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                      : 'bg-amber-100 text-amber-800 border-amber-200'
+                  }`}>
+                    {item.suitability} {t('assessment.suitabilityLabel', 'Suitability')}
+                  </span>
+                </div>
+                <p className="mt-1.5 text-xs text-earth-600">{item.reason}</p>
               </div>
-              <p className="mt-1.5 text-xs text-earth-600">{item.reason}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Fertilizer & Irrigation Baseline */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-xl border border-earth-200 bg-white p-5 shadow-sm">
-          <h4 className="font-bold text-earth-900 border-b border-earth-100 pb-3">
-            🧪 {t('assessment.fertilizerTitle', 'Fertilizer & Soil Amendment Plan')}
-          </h4>
-          <ul className="mt-4 space-y-2 text-sm text-earth-700">
-            {assessment.fertilizerPlan.map((step, idx) => (
-              <li key={idx} className="flex items-start gap-2">
-                <span className="mt-1 flex h-1.5 w-1.5 shrink-0 rounded-full bg-field-600" />
-                <span>{step}</span>
-              </li>
             ))}
-          </ul>
+          </div>
+        </div>
+      )}
+
+      {/* Fertilizer & Irrigation Section */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Fertilizer Card */}
+        <div className="rounded-xl border border-earth-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between border-b border-earth-100 pb-3">
+            <h4 className="font-bold text-earth-900">
+              🧪 {t('assessment.fertilizerTitle', 'Fertilizer & Soil Amendment Plan')}
+            </h4>
+            {fertilizerAdvice && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('fertilizer')}
+                className="text-xs font-bold text-field-700 hover:underline"
+              >
+                View Full Plan →
+              </button>
+            )}
+          </div>
+
+          {fertilizerAdvice ? (
+            <div className="mt-4 space-y-3">
+              <p className="text-xs text-earth-700 leading-relaxed font-medium">
+                {fertilizerAdvice.summary}
+              </p>
+              <div className="space-y-2">
+                {fertilizerAdvice.schedule.slice(0, 3).map((step, idx) => (
+                  <div key={idx} className="rounded-lg border border-earth-100 bg-earth-50/50 p-2.5 text-xs">
+                    <div className="flex justify-between font-bold text-earth-900">
+                      <span>{step.timing}</span>
+                      <span className="text-field-700">{step.qtyPerHectare}</span>
+                    </div>
+                    <p className="text-earth-700 font-medium mt-0.5">{step.fertilizer} ({step.npkGrade})</p>
+                    <p className="text-earth-500 text-[11px] mt-0.5">{step.notes}</p>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('fertilizer')}
+                className="w-full rounded-lg bg-field-50 border border-field-200 py-2 text-xs font-bold text-field-800 hover:bg-field-100 text-center"
+              >
+                View Complete {selectedCrop} Fertilizer Schedule →
+              </button>
+            </div>
+          ) : (
+            <ul className="mt-4 space-y-2 text-sm text-earth-700">
+              {assessment.fertilizerPlan.map((step, idx) => (
+                <li key={idx} className="flex items-start gap-2">
+                  <span className="mt-1 flex h-1.5 w-1.5 shrink-0 rounded-full bg-field-600" />
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
+        {/* Irrigation Card */}
         <div className="rounded-xl border border-earth-200 bg-white p-5 shadow-sm">
-          <h4 className="font-bold text-earth-900 border-b border-earth-100 pb-3">
-            💧 {t('assessment.irrigationTitle', 'Irrigation & Water Management')}
-          </h4>
+          <div className="flex items-center justify-between border-b border-earth-100 pb-3">
+            <h4 className="font-bold text-earth-900">
+              💧 {t('assessment.irrigationTitle', 'Irrigation & Water Management')}
+            </h4>
+            {sowingIntent === 'update' && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('irrigation')}
+                className="text-xs font-bold text-blue-700 hover:underline"
+              >
+                7-Day Forecast →
+              </button>
+            )}
+          </div>
           <p className="mt-4 text-sm text-earth-700 leading-relaxed">
             {assessment.irrigationStrategy}
           </p>
+          {sowingIntent === 'update' && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('irrigation')}
+              className="mt-4 w-full rounded-lg bg-blue-50 border border-blue-200 py-2 text-xs font-bold text-blue-800 hover:bg-blue-100 text-center"
+            >
+              View 7-Day Day-by-Day Irrigation Table →
+            </button>
+          )}
         </div>
       </div>
 

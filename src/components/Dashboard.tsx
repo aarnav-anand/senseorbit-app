@@ -108,32 +108,32 @@ export function Dashboard({ onStartScan, onCreateNewFarm }: DashboardProps) {
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="rounded-2xl border border-earth-200 bg-gradient-to-r from-field-900 via-field-800 to-field-700 p-6 text-white shadow-md sm:p-8">
+      <div className="rounded-2xl border border-emerald-800 bg-emerald-900 bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-800 p-6 text-white shadow-lg sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium backdrop-blur">
+            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-800/80 px-3 py-1 text-xs font-semibold text-emerald-100 border border-emerald-700/50">
               <span>🌾</span> SenseOrbit Farmland Portal
             </div>
-            <h2 className="mt-2 text-2xl font-extrabold sm:text-3xl">
+            <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl drop-shadow-xs">
               {t('dashboard.welcome', 'Welcome back')}, {farmer?.farmer_name}!
             </h2>
-            <p className="mt-1 text-sm text-field-100">
-              DIF Code: <span className="font-bold tracking-wider">{farmer?.dif_code}</span> · Manage your farmlands and run AI scans
+            <p className="mt-1 text-sm font-medium text-emerald-100">
+              DIF Code: <span className="font-bold tracking-wider text-white underline decoration-emerald-400">{farmer?.dif_code}</span> · Manage your farmlands and run AI scans
             </p>
           </div>
 
           <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-            <div className="flex items-center gap-2 rounded-2xl bg-white/15 px-5 py-3 backdrop-blur border border-white/20">
+            <div className="flex items-center gap-3 rounded-2xl bg-emerald-950/60 px-5 py-3 border border-emerald-700/60 shadow-inner">
               <span className="text-2xl">⚡</span>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-field-200">Available Credits</p>
-                <p className="text-2xl font-black">{farmer?.senseorbit ?? 0} Scans</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Available Credits</p>
+                <p className="text-2xl font-black text-white">{farmer?.senseorbit ?? 0} Scans</p>
               </div>
             </div>
             <button
               type="button"
               onClick={onCreateNewFarm}
-              className="w-full sm:w-auto rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-field-800 shadow-sm hover:bg-earth-50 transition-colors"
+              className="w-full sm:w-auto rounded-xl bg-white px-5 py-2.5 text-sm font-extrabold text-emerald-950 shadow-md hover:bg-emerald-50 transition-all hover:scale-105"
             >
               ➕ {t('dashboard.createNew', 'Create New Farmland')}
             </button>
