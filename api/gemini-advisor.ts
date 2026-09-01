@@ -116,7 +116,7 @@ Respond in this EXACT JSON format (no markdown, no code blocks, pure JSON):
 }
 
 async function callGemini(prompt: string, apiKey: string): Promise<object> {
-  const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+  const models = ['gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash'];
   let lastError: Error | null = null;
 
   for (const model of models) {
