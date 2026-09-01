@@ -138,6 +138,7 @@ interface FarmState {
   setMandiResponse: (response: MandiResponse | null) => void;
   setMandiLoading: (loading: boolean) => void;
   setMandiError: (error: string | null) => void;
+  clearLanguageDependentData: () => void;
 }
 
 export const useFarmStore = create<FarmState>((set) => ({
@@ -301,4 +302,20 @@ export const useFarmStore = create<FarmState>((set) => ({
   setMandiResponse: (mandiResponse) => set({ mandiResponse }),
   setMandiLoading: (mandiLoading) => set({ mandiLoading }),
   setMandiError: (mandiError) => set({ mandiError }),
+
+  clearLanguageDependentData: () =>
+    set({
+      geminiCropAdvice: null,
+      geminiCropLoading: false,
+      geminiCropError: null,
+      irrigationAdvisory: null,
+      irrigationLoading: false,
+      irrigationError: null,
+      fertilizerAdvice: null,
+      fertilizerLoading: false,
+      fertilizerError: null,
+      mandiResponse: null,
+      mandiLoading: false,
+      mandiError: null,
+    }),
 }));

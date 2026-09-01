@@ -7,6 +7,7 @@ export function LanguageToggle() {
   const current = i18n.language.startsWith('hi') ? 'hi' : 'en';
   const showReport = useFarmStore((s) => s.showReport);
   const setLanguageWarning = useFarmStore((s) => s.setLanguageWarning);
+  const clearLanguageDependentData = useFarmStore((s) => s.clearLanguageDependentData);
 
   const handleSelectLanguage = (lang: 'en' | 'hi') => {
     if (current !== lang && showReport) {
@@ -15,6 +16,8 @@ export function LanguageToggle() {
           ? 'स्कैन पूरा होने के बाद भाषा बदलने से स्कैन नई भाषा में अपडेट नहीं होगा। कृपया पुनः प्रयास करें।'
           : 'Change of language after scan is completed will NOT reupdate the scan in the new language. Please try again.';
       setLanguageWarning(msg);
+      // Clear all language-dependent advisory data to force fresh scan in new language
+      clearLanguageDependentData();
     }
     setLanguage(lang);
   };

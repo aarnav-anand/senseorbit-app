@@ -64,6 +64,20 @@ export default function App() {
 
       const [lat, lon] = currentBoundary.centroid;
 
+      // Clear ALL stale advisory data from any previous scan so old language responses never persist
+      setGeminiCropAdvice(null);
+      setGeminiCropError(null);
+      setGeminiCropLoading(false);
+      setFertilizerAdvice(null);
+      setFertilizerError(null);
+      setFertilizerLoading(false);
+      setIrrigationAdvisory(null);
+      setIrrigationError(null);
+      setIrrigationLoading(false);
+      setMandiResponse(null);
+      setMandiError(null);
+      setMandiLoading(false);
+
       setLoadingReport(true);
       setReportError(null);
       setActiveTab(intent === 'update' ? 'irrigation' : 'assessment');
