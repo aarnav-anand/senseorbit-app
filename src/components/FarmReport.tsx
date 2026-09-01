@@ -111,13 +111,13 @@ export function FarmReport() {
   if (!boundary) {
     return (
       <div className="rounded-2xl border border-earth-200 bg-white p-8 text-center shadow-xs space-y-4">
-        <p className="text-earth-700 font-medium">{t('map.noPolygon')}</p></p>
+        <p className="text-earth-700 font-medium">{t('map.noPolygon')}</p>
         <button
           type="button"
           onClick={resetReport}
           className="rounded-xl bg-field-600 px-5 py-2.5 text-sm font-bold text-white shadow-xs hover:bg-field-700"
         >
-            {t('report.backToMap')}
+          {t('report.backToMap')}
         </button>
       </div>
     );
