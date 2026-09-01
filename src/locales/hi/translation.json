@@ -22,17 +22,36 @@
   "nav": {
     "language": "भाषा",
     "english": "English",
-    "hindi": "हिंदी"
+    "hindi": "हिंदी",
+    "dashboard": "डैशबोर्ड",
+    "drawFarm": "खेत बनाएं",
+    "report": "रिपोर्ट"
   },
   "dashboard": {
     "welcome": "स्वागत है",
     "createNew": "नया खेत जोड़ें",
     "myFarmsTitle": "मेरे खेत",
+    "myFarmsDesc": "स्कैन चलाने या विवरण देखने के लिए मौजूदा खेत चुनें, या नया खेत बनाएं।",
     "noFarmsTitle": "अभी तक कोई खेत सहेजा नहीं गया है",
     "noFarmsDesc": "अपने खाते में सहेजने और उपग्रह आधारित फसल, मिट्टी, मौसम और बाजार सलाह प्राप्त करने के लिए मानचित्र पर अपने खेत की सीमा बनाएं।",
     "confirmDelete": "क्या आप निश्चित रूप से इस खेत को हटाना चाहते हैं?",
     "deleteError": "खेत हटाने में विफल।",
-    "loadError": "सहेजे गए खेत लोड नहीं किए जा सके।"
+    "loadError": "सहेजे गए खेत लोड नहीं किए जा सके।",
+    "portalTitle": "SenseOrbit कृषि पोर्टल",
+    "portalSubtitle": "अपने खेतों का प्रबंधन करें और AI स्कैन चलाएं",
+    "availableCredits": "उपलब्ध क्रेडिट",
+    "scans": "स्कैन",
+    "refresh": "ताज़ा करें",
+    "refreshing": "ताज़ा हो रहा है…",
+    "drawNewFarm": "नया खेत बनाएं",
+    "createNewFarmland": "नया खेत जोड़ें",
+    "drawNewPolygon": "मानचित्र पर अपने खेत की नई सीमा बनाएं",
+    "savedFarmBadge": "सहेजा गया खेत",
+    "area": "क्षेत्रफल",
+    "coordinates": "निर्देशांक",
+    "addedDate": "जोड़ा गया",
+    "scanFarm": "खेत स्कैन करें",
+    "viewOnMap": "मानचित्र"
   },
   "intent": {
     "title": "आप क्या खोज रहे हैं?",

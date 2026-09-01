@@ -22,17 +22,36 @@
   "nav": {
     "language": "Language",
     "english": "English",
-    "hindi": "हिंदी"
+    "hindi": "हिंदी",
+    "dashboard": "Dashboard",
+    "drawFarm": "Draw Farm",
+    "report": "Report"
   },
   "dashboard": {
     "welcome": "Welcome back",
     "createNew": "Create New Farmland",
     "myFarmsTitle": "My Farmlands",
+    "myFarmsDesc": "Select an existing farm to run a scan or view details, or create a new farmland polygon.",
     "noFarmsTitle": "No Farmlands Saved Yet",
     "noFarmsDesc": "Draw your farm boundary on the interactive map to save it to your account and get satellite-based crop, soil, weather & market advice.",
     "confirmDelete": "Are you sure you want to delete this farmland?",
     "deleteError": "Failed to delete farmland.",
-    "loadError": "Could not load your saved farmlands."
+    "loadError": "Could not load your saved farmlands.",
+    "portalTitle": "SenseOrbit Farmland Portal",
+    "portalSubtitle": "Manage your farmlands and run AI scans",
+    "availableCredits": "Available Credits",
+    "scans": "Scans",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing…",
+    "drawNewFarm": "Draw New Farm",
+    "createNewFarmland": "Create New Farmland",
+    "drawNewPolygon": "Draw a new polygon on the interactive map",
+    "savedFarmBadge": "Saved Farm",
+    "area": "Area",
+    "coordinates": "Coordinates",
+    "addedDate": "Added",
+    "scanFarm": "Scan Farm",
+    "viewOnMap": "Map"
   },
   "intent": {
     "title": "What are you looking for?",

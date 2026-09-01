@@ -23,7 +23,7 @@ export function Header() {
         <div className="flex items-center gap-6">
           <div className="min-w-0 cursor-pointer" onClick={() => farmer && setCurrentView('dashboard')}>
             <h1 className="truncate text-lg font-bold text-field-700 sm:text-xl">{t('app.name')}</h1>
-            <p className="hidden truncate text-xs text-earth-600 sm:block">{t('app.tagline', 'Accredited Satellite & AI Agronomy Portal')}</p>
+            <p className="hidden truncate text-xs text-earth-600 sm:block">{t('app.tagline')}</p>
           </div>
 
           {/* View Switcher Navigation */}
@@ -38,7 +38,7 @@ export function Header() {
                     : 'text-earth-600 hover:text-earth-900'
                 }`}
               >
-                🏠 Dashboard
+                🏠 {t('nav.dashboard', 'Dashboard')}
               </button>
               <button
                 type="button"
@@ -49,7 +49,7 @@ export function Header() {
                     : 'text-earth-600 hover:text-earth-900'
                 }`}
               >
-                🗺️ Draw Farm
+                🗺️ {t('nav.drawFarm', 'Draw Farm')}
               </button>
               {showReport && (
                 <button
@@ -61,7 +61,7 @@ export function Header() {
                       : 'text-earth-600 hover:text-earth-900'
                   }`}
                 >
-                  📊 Report
+                  📊 {t('nav.report', 'Report')}
                 </button>
               )}
             </nav>
