@@ -190,6 +190,7 @@ export interface GeminiNewSowingRequest {
   lat: number;
   lon: number;
   mode: 'new_sowing';
+  locale?: string;
   ndviMean?: number;
   soilPh?: number;
   soilTexture?: string;
@@ -209,6 +210,7 @@ export interface GeminiFertilizerRequest {
   mode: 'fertilizer';
   crop: string;
   sowingDate: string;
+  locale?: string;
   ndviMean?: number;
   soilPh?: number;
   soilTexture?: string;
@@ -260,6 +262,7 @@ export function fetchIrrigationAdvisory(
   ndviMean?: number,
   bulkDensity?: number,
   organicCarbon?: number,
+  locale?: string,
 ): Promise<IrrigationAdvisory> {
   const params: Record<string, string> = {
     lat: String(lat),
@@ -267,6 +270,7 @@ export function fetchIrrigationAdvisory(
     crop,
     sowingDate,
   };
+  if (locale != null) params.locale = locale;
   if (ndviMean != null) params.ndviMean = String(ndviMean);
   if (bulkDensity != null) params.bulkDensity = String(bulkDensity);
   if (organicCarbon != null) params.organicCarbon = String(organicCarbon);

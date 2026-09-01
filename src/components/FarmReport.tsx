@@ -105,10 +105,31 @@ export function FarmReport() {
     );
   }
 
+  const languageWarning = useFarmStore((s) => s.languageWarning);
+  const setLanguageWarning = useFarmStore((s) => s.setLanguageWarning);
+
   if (!boundary) return null;
 
   return (
     <section id="farm-report-content" className="space-y-6">
+      {languageWarning && (
+        <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-amber-900 shadow-sm flex items-start justify-between gap-3">
+          <div className="flex items-start gap-2.5">
+            <span className="text-xl shrink-0">⚠️</span>
+            <p className="text-xs font-semibold sm:text-sm leading-relaxed">
+              {languageWarning}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setLanguageWarning(null)}
+            className="shrink-0 rounded-lg bg-amber-200/80 px-2.5 py-1 text-xs font-bold text-amber-900 hover:bg-amber-300"
+          >
+            ✕ {t('common.close', 'Close')}
+          </button>
+        </div>
+      )}
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">

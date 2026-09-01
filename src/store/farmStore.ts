@@ -51,6 +51,8 @@ interface FarmState {
   reportError: string | null;
   creditExhaustedMessage: string | null;
   waterBodyError: string | null;
+  languageWarning: string | null;
+  setLanguageWarning: (msg: string | null) => void;
 
   weather: WeatherResponse | null;
   soil: SoilResponse | null;
@@ -149,6 +151,7 @@ export const useFarmStore = create<FarmState>((set) => ({
   reportError: null,
   creditExhaustedMessage: null,
   waterBodyError: null,
+  languageWarning: null,
 
   weather: null,
   soil: null,
@@ -240,6 +243,7 @@ export const useFarmStore = create<FarmState>((set) => ({
   setReportError: (reportError) => set({ reportError }),
   setCreditExhaustedMessage: (creditExhaustedMessage) => set({ creditExhaustedMessage }),
   setWaterBodyError: (waterBodyError) => set({ waterBodyError }),
+  setLanguageWarning: (languageWarning) => set({ languageWarning }),
   resetReport: () =>
     set({
       currentView: 'dashboard',
@@ -256,6 +260,7 @@ export const useFarmStore = create<FarmState>((set) => ({
       isLoadingReport: false,
       creditExhaustedMessage: null,
       waterBodyError: null,
+      languageWarning: null,
       sowingIntent: null,
       selectedCrop: null,
       sowingDate: null,

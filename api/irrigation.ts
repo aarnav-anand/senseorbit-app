@@ -27,12 +27,12 @@ interface GrowthStageInfo {
   demandFraction: number; // fraction of peak water demand
 }
 
-function getGrowthStage(daysFromSowing: number): GrowthStageInfo {
-  if (daysFromSowing <= 20) return { stage: 'Establishment', kcMultiplier: 0.4, demandFraction: 0.5 };
-  if (daysFromSowing <= 45) return { stage: 'Vegetative', kcMultiplier: 0.75, demandFraction: 0.75 };
-  if (daysFromSowing <= 90) return { stage: 'Reproductive', kcMultiplier: 1.1, demandFraction: 1.0 };
-  if (daysFromSowing <= 120) return { stage: 'Grain Filling', kcMultiplier: 0.9, demandFraction: 0.85 };
-  return { stage: 'Maturity', kcMultiplier: 0.5, demandFraction: 0.6 };
+function getGrowthStage(daysFromSowing: number, isHindi: boolean): GrowthStageInfo {
+  if (daysFromSowing <= 20) return { stage: isHindi ? 'स्थापना चरण (Establishment)' : 'Establishment', kcMultiplier: 0.4, demandFraction: 0.5 };
+  if (daysFromSowing <= 45) return { stage: isHindi ? 'वानस्पतिक विकास (Vegetative)' : 'Vegetative', kcMultiplier: 0.75, demandFraction: 0.75 };
+  if (daysFromSowing <= 90) return { stage: isHindi ? 'फूल/प्रजनन चरण (Reproductive)' : 'Reproductive', kcMultiplier: 1.1, demandFraction: 1.0 };
+  if (daysFromSowing <= 120) return { stage: isHindi ? 'दाने भरने का चरण (Grain Filling)' : 'Grain Filling', kcMultiplier: 0.9, demandFraction: 0.85 };
+  return { stage: isHindi ? 'परिपक्वता चरण (Maturity)' : 'Maturity', kcMultiplier: 0.5, demandFraction: 0.6 };
 }
 
 function getCropWaterReq(crop: string): number {
@@ -40,7 +40,14 @@ function getCropWaterReq(crop: string): number {
   return CROP_WATER_REQ[normalized] ?? 4.5;
 }
 
-function buildAdvisory(irrigationMm: number, rainMm: number): string {
+function buildAdvisory(irrigationMm: number, rainMm: number, isHindi: boolean): string {
+  if (isHindi) {
+    if (irrigationMm === 0 && rainMm >= 5) return 'पर्याप्त वर्षा की संभावना। सिंचाई की आवश्यकता नहीं है।';
+    if (irrigationMm === 0) return 'आज सिंचाई की आवश्यकता नहीं है।';
+    if (irrigationMm < 8) return 'हल्की सिंचाई की सिफारिश की जाती है (स्प्रिंकलर या ड्रिप का उपयोग करें)।';
+    if (irrigationMm < 18) return 'मध्यम सिंचाई की आवश्यकता है (ड्रिप या फ्लड विधि का उपयोग करें)।';
+    return 'भारी सिंचाई की आवश्यकता है। पर्याप्त जल आपूर्ति सुनिश्चित करें और 2 बार में पानी दें।';
+  }
   if (irrigationMm === 0 && rainMm >= 5) return 'Sufficient rainfall expected. Skip irrigation.';
   if (irrigationMm === 0) return 'No irrigation needed today.';
   if (irrigationMm < 8) return 'Light irrigation recommended. Use sprinkler or drip.';
@@ -48,23 +55,35 @@ function buildAdvisory(irrigationMm: number, rainMm: number): string {
   return 'Heavy irrigation required. Ensure adequate water supply and apply in 2 passes.';
 }
 
-function buildSoilNote(bulkDensity?: number, organicCarbon?: number): string {
+function buildSoilNote(bulkDensity?: number, organicCarbon?: number, isHindi?: boolean): string {
   if (bulkDensity == null) {
-    return 'Soil density data unavailable. Apply standard irrigation intervals for your soil type.';
+    return isHindi
+      ? 'मिट्टी के घनत्व का डेटा उपलब्ध नहीं है। अपनी मिट्टी के प्रकार के लिए मानक सिंचाई अंतराल लागू करें।'
+      : 'Soil density data unavailable. Apply standard irrigation intervals for your soil type.';
   }
   let note = '';
   if (bulkDensity < 1.2) {
-    note = 'Loose soil with excellent water infiltration and high porosity. Apply frequent, lighter irrigations (every 2-3 days) to avoid deep percolation losses.';
+    note = isHindi
+      ? 'उच्च सरंध्रता वाली ढीली मिट्टी। गहरा पानी बहने से रोकने के लिए बार-बार हल्की सिंचाई (हर 2-3 दिन में) करें।'
+      : 'Loose soil with excellent water infiltration and high porosity. Apply frequent, lighter irrigations (every 2-3 days) to avoid deep percolation losses.';
   } else if (bulkDensity <= 1.5) {
-    note = 'Moderate soil density with good structure. Standard irrigation intervals apply (every 3-5 days depending on crop stage).';
+    note = isHindi
+      ? 'अच्छी संरचना वाली मध्यम मिट्टी। मानक सिंचाई अंतराल लागू होते हैं (फसल चरण के आधार पर हर 3-5 दिन में)।'
+      : 'Moderate soil density with good structure. Standard irrigation intervals apply (every 3-5 days depending on crop stage).';
   } else {
-    note = 'Compacted soil detected (BD > 1.5 kg/dm³). High risk of surface runoff — apply water slowly in 2 passes. Consider sub-soiling to improve infiltration.';
+    note = isHindi
+      ? 'सघन मिट्टी पाई गई (BD > 1.5 kg/dm³)। सतह से पानी बहने का उच्च जोखिम - 2 बार में धीरे-धीरे पानी दें।'
+      : 'Compacted soil detected (BD > 1.5 kg/dm³). High risk of surface runoff — apply water slowly in 2 passes. Consider sub-soiling to improve infiltration.';
   }
   if (organicCarbon != null) {
     if (organicCarbon < 1.0) {
-      note += ' Low organic carbon reduces water retention — consider adding FYM/compost to improve soil moisture holding capacity.';
+      note += isHindi
+        ? ' कम कार्बनिक पदार्थ पानी धारण क्षमता को घटाता है - गोबर खाद/कम्पोस्ट जोड़ें।'
+        : ' Low organic carbon reduces water retention — consider adding FYM/compost to improve soil moisture holding capacity.';
     } else if (organicCarbon >= 2.0) {
-      note += ' Good organic carbon content improves water holding; you may be able to extend irrigation intervals slightly.';
+      note += isHindi
+        ? ' अच्छा कार्बनिक पदार्थ नमी बनाए रखता है; आप सिंचाई अंतराल थोड़ा बढ़ा सकते हैं।'
+        : ' Good organic carbon content improves water holding; you may be able to extend irrigation intervals slightly.';
     }
   }
   return note;
@@ -75,7 +94,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const lon = parseFloat(String(req.query.lon ?? ''));
   const crop = String(req.query.crop ?? '');
   const sowingDate = String(req.query.sowingDate ?? '');
-  const ndviMean = req.query.ndviMean != null ? parseFloat(String(req.query.ndviMean)) : undefined;
+  const locale = String(req.query.locale ?? 'en');
+  const isHindi = locale.startsWith('hi');
+
   const bulkDensity = req.query.bulkDensity != null ? parseFloat(String(req.query.bulkDensity)) : undefined;
   const organicCarbon = req.query.organicCarbon != null ? parseFloat(String(req.query.organicCarbon)) : undefined;
 
@@ -89,7 +110,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (Number.isNaN(sowingTs)) return res.status(400).json({ error: 'Invalid sowingDate format. Use YYYY-MM-DD.' });
 
   const daysFromSowing = Math.floor((Date.now() - sowingTs) / (1000 * 60 * 60 * 24));
-  const { stage, kcMultiplier, demandFraction } = getGrowthStage(daysFromSowing);
+  const { stage, kcMultiplier, demandFraction } = getGrowthStage(daysFromSowing, isHindi);
   const peakWaterReq = getCropWaterReq(crop);
 
   // Fetch 7-day forecast from Open-Meteo (precipitation + ET0)
@@ -136,7 +157,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       expectedRainMm: Math.round(expectedRainMm * 10) / 10,
       et0: Math.round(et0 * 10) / 10,
       irrigationMm,
-      advisory: buildAdvisory(irrigationMm, expectedRainMm),
+      advisory: buildAdvisory(irrigationMm, expectedRainMm, isHindi),
     };
   });
 
@@ -151,6 +172,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     days,
     totalIrrigation7Days,
     totalRain7Days,
-    soilNote: buildSoilNote(bulkDensity, organicCarbon),
+    soilNote: buildSoilNote(bulkDensity, organicCarbon, isHindi),
   });
 }

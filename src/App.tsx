@@ -18,7 +18,7 @@ import {
 import { deductFarmerCredit } from './lib/supabase';
 
 export default function App() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const farmer = useFarmStore((s) => s.farmer);
   const currentView = useFarmStore((s) => s.currentView);
   const setCurrentView = useFarmStore((s) => s.setCurrentView);
@@ -126,6 +126,8 @@ export default function App() {
           .finally(() => setMandiLoading(false));
 
         // Handle Intent-Specific API Calls
+        const currentLang = i18n.language.startsWith('hi') ? 'hi' : 'en';
+
         if (intent === 'new') {
           // Gemini AI Crop Recommendation
           setGeminiCropLoading(true);
@@ -134,6 +136,7 @@ export default function App() {
             lat,
             lon,
             mode: 'new_sowing',
+            locale: currentLang,
             ndviMean,
             soilPh: fullSoil?.properties.ph[0]?.value,
             soilTexture: fullSoil?.summaryKeys.texture,
@@ -161,6 +164,7 @@ export default function App() {
             ndviMean,
             fullSoil?.properties.bulkDensity[0]?.value,
             fullSoil?.properties.organicCarbon[0]?.value,
+            currentLang,
           )
             .then((res) => setIrrigationAdvisory(res))
             .catch((err) => setIrrigationError(err instanceof Error ? err.message : 'Failed to load irrigation advisory'))
@@ -175,6 +179,7 @@ export default function App() {
             mode: 'fertilizer',
             crop,
             sowingDate,
+            locale: currentLang,
             ndviMean,
             soilPh: fullSoil?.properties.ph[0]?.value,
             soilTexture: fullSoil?.summaryKeys.texture,
@@ -220,6 +225,7 @@ export default function App() {
       setShowReport,
       setWaterBodyError,
       t,
+      i18n,
       updateCredits,
     ],
   );

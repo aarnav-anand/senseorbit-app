@@ -17,12 +17,41 @@
     "logout": "Sign Out"
   },
   "footer": {
-    "attribution": "Imagery from Esri, other data from OpenStreetMap contributors · Contains modified Copernicus Sentinel data · Soil data © ISRIC SoilGrids · Weather data © Open-Meteo"
+    "attribution": "Imagery from Esri, other data from OpenStreetMap contributors · Contains modified Copernicus Sentinel data · Soil data © ISRIC SoilGrids · Weather data © Open-Meteo · Agmarknet"
   },
   "nav": {
     "language": "Language",
     "english": "English",
     "hindi": "हिंदी"
+  },
+  "dashboard": {
+    "welcome": "Welcome back",
+    "createNew": "Create New Farmland",
+    "myFarmsTitle": "My Farmlands",
+    "noFarmsTitle": "No Farmlands Saved Yet",
+    "noFarmsDesc": "Draw your farm boundary on the interactive map to save it to your account and get satellite-based crop, soil, weather & market advice.",
+    "confirmDelete": "Are you sure you want to delete this farmland?",
+    "deleteError": "Failed to delete farmland.",
+    "loadError": "Could not load your saved farmlands."
+  },
+  "intent": {
+    "title": "What are you looking for?",
+    "subtitle": "Choose the type of advisory you need for this farm boundary",
+    "newSowing": {
+      "title": "Plan New Sowing",
+      "desc": "Get AI-powered crop recommendations based on NDVI, soil, weather & region data. Full farm scan included."
+    },
+    "cropUpdate": {
+      "title": "Updates on Existing Crop",
+      "desc": "Get 7-day irrigation advisory, detailed fertilizer schedule & mandi prices for your sowed crop."
+    },
+    "cropDetails": {
+      "title": "Tell us about your crop",
+      "cropLabel": "Crop Being Grown",
+      "sowingDateLabel": "Date of Sowing",
+      "info": "You'll get the full farm scan (soil, weather, NDVI, satellite) PLUS a 7-day irrigation plan and detailed fertilizer advisory tailored to your crop's growth stage.",
+      "confirm": "Run Full Scan + Advisory →"
+    }
   },
   "map": {
     "title": "Draw Your Farm Boundary",
@@ -45,6 +74,15 @@
     "polygonTooSmall": "The drawn area is too small. Please draw a larger boundary.",
     "generatingReport": "Generating report…",
     "waterBodyRejected": "The drawn boundary is over a water body (ocean, lake, or river). Please redraw your farm boundary over agricultural land. No credits were deducted.",
+    "analyzeButton": "Analyze This Boundary",
+    "saveButton": "Save as Farm",
+    "myFarmsButton": "My Farms",
+    "myFarmsTitle": "Saved Farms",
+    "noFarms": "No saved farms yet. Save a boundary to build your farm library.",
+    "saveFarm": {
+      "title": "Save This Farm Boundary",
+      "placeholder": "Farm name (e.g. North Field, Khet 1)"
+    },
     "basemap": {
       "street": "Street map",
       "satellite": "Satellite (Esri World Imagery)"
@@ -57,14 +95,18 @@
     "tabs": {
       "assessment": "Overall Assessment",
       "weather": "Weather",
-      "satellite": "Satellite"
+      "satellite": "Satellite",
+      "irrigation": "Irrigation",
+      "fertilizer": "Fertilizer",
+      "mandi": "Mandi Prices"
     },
     "loading": "Loading live accredited scan data…",
     "error": "Could not load report data. Please try again.",
     "retry": "Retry",
     "downloadPdf": "Download PDF",
     "exportingPdf": "Exporting PDF…",
-    "backToMap": "Back to map"
+    "backToMap": "Back to map",
+    "languageWarning": "Change of language after scan is completed will NOT reupdate the scan in the new language. Please try again."
   },
   "assessment": {
     "badge": "AI & Multi-Source Synthesized",
@@ -83,6 +125,19 @@
     "fertilizerTitle": "Fertilizer & Soil Amendment Plan",
     "irrigationTitle": "Irrigation & Water Management",
     "riskTitle": "Agronomic Risks & Warnings"
+  },
+  "irrigation": {
+    "loading": "Fetching 7-day irrigation forecast…",
+    "errorNote": "Could not load irrigation advisory. Please try again.",
+    "noData": "No irrigation advisory available. This tab is shown when you select 'Crop Updates' intent."
+  },
+  "fertilizer": {
+    "loading": "Generating fertilizer advisory with Gemini AI…",
+    "noData": "Fertilizer advice is generated when you select 'Crop Updates' intent."
+  },
+  "mandi": {
+    "loading": "Fetching live mandi prices…",
+    "refresh": "Refresh"
   },
   "soil": {
     "title": "Soil Analysis",
@@ -143,6 +198,7 @@
     "close": "Close",
     "cancel": "Cancel",
     "confirm": "Confirm",
+    "save": "Save",
     "error": "Something went wrong"
   }
 }

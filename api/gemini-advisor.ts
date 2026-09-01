@@ -4,6 +4,7 @@ interface GeminiAdvisorRequest {
   lat: number;
   lon: number;
   mode: 'new_sowing' | 'fertilizer';
+  locale?: string;
   ndviMean?: number;
   soilPh?: number;
   soilTexture?: string;
@@ -22,6 +23,11 @@ interface GeminiAdvisorRequest {
 function buildNewSowingPrompt(body: GeminiAdvisorRequest): string {
   const currentDate = new Date().toISOString().slice(0, 10);
   const region = body.region || `lat ${body.lat?.toFixed(2)}, lon ${body.lon?.toFixed(2)} (India)`;
+  const isHindi = body.locale?.startsWith('hi');
+  const langInstruction = isHindi
+    ? `\nCRITICAL LANGUAGE INSTRUCTION: The farmer selected HINDI language. You MUST write all string values (topCrop, topCropReason, crop names in alternatives, reason in alternatives, bestSowingWindow, keyRisks, summary) in HINDI using Devanagari script (e.g. कपास, गेहूं, मक्का, मूंगफली, धान इत्यादि). Return pure valid JSON.`
+    : `\nCRITICAL LANGUAGE INSTRUCTION: The farmer selected ENGLISH language. Write all text in ENGLISH. Return pure valid JSON.`;
+
   return `You are a senior Indian agricultural scientist. A farmer in ${region} wants to know the best crop to sow this season.
 
 Field Data (real-time from satellites and sensors):
@@ -42,6 +48,7 @@ Based on these signals, provide your best agronomic recommendation. Consider:
 2. Soil suitability for each crop
 3. Water availability from rainfall and NDVI
 4. Temperature requirements
+${langInstruction}
 
 Provide your response in this EXACT JSON format (no markdown, no code blocks, pure JSON):
 {
@@ -66,6 +73,10 @@ function buildFertilizerPrompt(body: GeminiAdvisorRequest): string {
   if (body.sowingDate) {
     daysElapsed = Math.floor((Date.now() - new Date(body.sowingDate).getTime()) / (1000 * 60 * 60 * 24));
   }
+  const isHindi = body.locale?.startsWith('hi');
+  const langInstruction = isHindi
+    ? `\nCRITICAL LANGUAGE INSTRUCTION: The farmer selected HINDI language. You MUST write all string values (timing, fertilizer names, method, notes, nutrient, product, dose, placementGuidance, organicAmendments, warnings, summary) in HINDI using Devanagari script (e.g. यूरिया (Urea), डीएपी (DAP), एमओपी (MOP), एनपीके (NPK), बुआई के समय, पहली शीर्ष खाद, छिड़काव, जिंक सल्फेट इत्यादि). Return pure valid JSON.`
+    : `\nCRITICAL LANGUAGE INSTRUCTION: The farmer selected ENGLISH language. Write all text in ENGLISH. Return pure valid JSON.`;
 
   return `You are a senior Indian agronomist and crop nutrition expert. A farmer in ${region} is growing ${crop}, sown on ${sowingDate} (${daysElapsed} days ago) on a ${body.areaHectares?.toFixed(2) ?? 'unknown'} hectare farm.
 
@@ -80,31 +91,32 @@ Current Field Data (from satellites and sensors):
 - Current Date: ${currentDate}
 
 Provide a detailed, practical fertilizer advisory suitable for an Indian farmer using government-recognized fertilizers (DAP, Urea, MOP, NPK grades like 12:32:16, 10:26:26, etc.) available in Indian markets.
+${langInstruction}
 
 Respond in this EXACT JSON format (no markdown, no code blocks, pure JSON):
 {
   "schedule": [
     {
-      "timing": "e.g. At sowing (Basal) / 21 DAS (Days After Sowing) / 45 DAS",
-      "fertilizer": "e.g. DAP (Di-Ammonium Phosphate)",
+      "timing": "timing description",
+      "fertilizer": "fertilizer name",
       "npkGrade": "e.g. 18-46-0",
       "qtyPerHectare": "e.g. 100 kg/ha",
-      "method": "e.g. Basal broadcast / Top-dress by hand / Fertigation",
-      "notes": "e.g. Mix into top 5 cm before sowing; do not apply in standing water"
+      "method": "application method",
+      "notes": "application notes"
     }
   ],
   "micronutrients": [
-    { "nutrient": "e.g. Zinc", "product": "e.g. Zinc Sulphate 21%", "dose": "e.g. 25 kg/ha", "timing": "e.g. Basal at sowing" }
+    { "nutrient": "nutrient name", "product": "product name", "dose": "e.g. 25 kg/ha", "timing": "timing" }
   ],
-  "placementGuidance": "2-3 sentences: where exactly to apply each fertilizer (row/furrow/broadcast/banding depth), and why",
-  "organicAmendments": "1-2 sentences on FYM / vermicompost / biofertilizer (Rhizobium/PSB) recommendations if applicable",
-  "warnings": ["warning 1 specific to soil data", "warning 2 specific to crop stage"],
-  "summary": "3-4 sentence narrative the farmer can understand and act on immediately"
+  "placementGuidance": "2-3 sentences on placement",
+  "organicAmendments": "1-2 sentences on organic amendments",
+  "warnings": ["warning 1", "warning 2"],
+  "summary": "3-4 sentence narrative summary"
 }`;
 }
 
 async function callGemini(prompt: string, apiKey: string): Promise<object> {
-  const models = ['gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+  const models = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash'];
   let lastError: Error | null = null;
 
   for (const model of models) {
