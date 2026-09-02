@@ -163,6 +163,11 @@ export interface MandiResponse {
   previousDayPrices?: MandiPrice[];
   isNoPricesToday?: boolean;
   previousDayDate?: string;
+  displayDateLabel?: string;
+  crop?: string;
+  commodityName?: string;
+  cropDisplayName?: string;
+  priceUnit?: string;
   detectedState: string;
   source: 'agmarknet' | 'fallback';
   note?: string;
