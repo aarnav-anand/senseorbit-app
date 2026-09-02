@@ -40,7 +40,7 @@ export function FertilizerTab({ data, loading, error, crop }: FertilizerTabProps
           <p className="text-sm font-medium text-earth-700">
             {t('fertilizer.loading')}
           </p>
-          <p className="text-xs text-earth-500">Powered by Google Gemini · Soil-calibrated</p>
+          <p className="text-xs text-earth-500">Powered by AI Model · Soil-calibrated</p>
         </div>
       </div>
     );
@@ -51,7 +51,7 @@ export function FertilizerTab({ data, loading, error, crop }: FertilizerTabProps
       <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
         <p className="text-sm text-red-800">⚠️ {error}</p>
         <p className="mt-2 text-xs text-red-600">
-          Make sure GEMINI_API_KEY is configured in your Vercel environment variables.
+          Make sure GEMINI_API_KEY or MISTRAL_API_KEY is configured in your Vercel environment variables.
         </p>
       </div>
     );

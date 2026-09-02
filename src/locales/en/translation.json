@@ -217,7 +217,7 @@
     }
   },
   "fertilizer": {
-    "loading": "Generating fertilizer advisory with Gemini AI…",
+    "loading": "Generating fertilizer advisory with AI Model…",
     "noData": "Fertilizer advice is generated when you select \"Crop Updates\" intent."
   },
   "irrigation": {

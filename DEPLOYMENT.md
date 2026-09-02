@@ -47,9 +47,9 @@ CREATE POLICY "Allow public read/write for farmlands"
 
 SenseOrbit uses two key public/free APIs:
 
-1. **Google Gemini API** (`GEMINI_API_KEY`):
-   - Used for LLM-based crop selection (new sowing) and detailed fertilizer schedules (crop updates).
-   - Get a free key at [Google AI Studio](https://aistudio.google.com/app/apikey).
+1. **AI Advisory APIs**:
+   - Primary AI Model (`GEMINI_API_KEY`): Used for LLM crop selection and fertilizer schedules. Get a free key at [Google AI Studio](https://aistudio.google.com/app/apikey).
+   - Advanced AI Model Fallback (`MISTRAL_API_KEY`): Used as automatic fallback if primary model is unavailable. Get a key at [Mistral AI Console](https://console.mistral.ai/).
 
 2. **Government of India Agmarknet API** (`AGMARKNET_API_KEY`):
    - Used for live mandi prices in nearby markets.

@@ -149,7 +149,7 @@ export function MandiPricesTab({ data, loading, error, crop, onRefresh }: MandiP
           <p className="mt-1 text-sm text-amber-800">{data.note}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <a
-              href="https://data.gov.in/user/register"
+              href="https://data.gov.in/duser/register"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 rounded-lg bg-amber-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-800"
@@ -234,7 +234,7 @@ export function MandiPricesTab({ data, loading, error, crop, onRefresh }: MandiP
               </div>
             ))}
           </div>
-
+        
           <p className="text-center text-xs text-earth-400">
             Data sourced from Agmarknet (National Agriculture Market) · data.gov.in · Prices in ₹/{priceUnit}
           </p>

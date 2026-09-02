@@ -169,7 +169,7 @@ export default function App() {
             areaHectares: currentBoundary.areaHectares,
           })
             .then((res) => setGeminiCropAdvice(res))
-            .catch((err) => setGeminiCropError(err instanceof Error ? err.message : 'Failed to generate Gemini AI crop advice'))
+            .catch((err) => setGeminiCropError(err instanceof Error ? err.message : 'Failed to generate AI Model crop advice'))
             .finally(() => setGeminiCropLoading(false));
         } else if (intent === 'update' && crop && sowingDate) {
           // 1. Irrigation Advisory

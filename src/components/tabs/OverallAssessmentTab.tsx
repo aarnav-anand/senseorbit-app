@@ -73,7 +73,7 @@ export function OverallAssessmentTab() {
           <div className="flex items-center gap-2 mb-3">
             <span className="rounded-full bg-field-600 p-1.5 text-white text-xs">✨</span>
             <h4 className="font-bold text-earth-900 text-lg">
-              Gemini AI Crop Selection Advisor
+              AI Model Crop Selection Advisor
             </h4>
             <span className="ml-auto text-xs font-semibold text-field-700 bg-field-100 border border-field-200 px-2.5 py-0.5 rounded-full">
               NDVI + Weather + Soil Synthesized
@@ -83,7 +83,7 @@ export function OverallAssessmentTab() {
           {geminiCropLoading ? (
             <div className="flex items-center gap-3 py-4">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-field-600 border-t-transparent" />
-              <span className="text-sm font-medium text-earth-700">Asking Gemini LLM for optimal crop selection...</span>
+              <span className="text-sm font-medium text-earth-700">Consulting AI Model for optimal crop selection...</span>
             </div>
           ) : geminiCropError ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
