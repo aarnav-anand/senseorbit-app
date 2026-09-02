@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { MandiResponse } from '../../types/report';
 
@@ -19,8 +20,51 @@ function PricePill({ label, value, color }: { label: string; value: number; colo
   );
 }
 
+function NoPricesTodayModal({ onDismiss, previousDayDate }: { onDismiss: () => void; previousDayDate?: string }) {
+  return (
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-2xl border border-amber-200 bg-white shadow-2xl">
+        {/* Header */}
+        <div className="border-b border-amber-100 px-6 py-5">
+          <h2 className="text-lg font-bold text-amber-900">
+            ⚠️ No Prices Today
+          </h2>
+        </div>
+
+        {/* Body */}
+        <div className="p-6">
+          <p className="text-sm text-earth-700">
+            Price data is not yet available for today. We're showing prices from{' '}
+            <strong>{previousDayDate ? new Date(previousDayDate).toLocaleDateString('en-IN', { 
+              weekday: 'short', 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric' 
+            }) : 'yesterday'}</strong> instead.
+          </p>
+          <p className="mt-3 text-xs text-earth-500">
+            Price updates typically happen during market hours. Try refreshing later today for the latest prices.
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-amber-100 px-6 py-4 flex justify-end">
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
+          >
+            Got it
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function MandiPricesTab({ data, loading, error, crop, onRefresh }: MandiPricesTabProps) {
   const { t } = useTranslation();
+  const [showNoPricesWarning, setShowNoPricesWarning] = useState(true);
 
   if (loading) {
     return (
@@ -54,6 +98,14 @@ export function MandiPricesTab({ data, loading, error, crop, onRefresh }: MandiP
 
   return (
     <div className="space-y-5">
+      {/* No Prices Today Warning Modal */}
+      {data?.isNoPricesToday && showNoPricesWarning && (
+        <NoPricesTodayModal
+          onDismiss={() => setShowNoPricesWarning(false)}
+          previousDayDate={data.previousDayDate}
+        />
+      )}
+
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -67,6 +119,11 @@ export function MandiPricesTab({ data, loading, error, crop, onRefresh }: MandiP
             <p className="text-sm text-earth-500">
               Region: <strong className="text-earth-700">{data.detectedState}</strong>
               {' '}· Source: {data.source === 'agmarknet' ? 'Agmarknet (data.gov.in)' : 'Not available'}
+              {data.isNoPricesToday && data.previousDayDate && (
+                <span className="ml-2 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                  📅 From {new Date(data.previousDayDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+                </span>
+              )}
             </p>
           )}
         </div>
@@ -179,7 +236,7 @@ export function MandiPricesTab({ data, loading, error, crop, onRefresh }: MandiP
       ) : data && data.prices.length === 0 && data.source === 'agmarknet' ? (
         <div className="rounded-xl border border-earth-200 bg-earth-50 p-6 text-center">
           <p className="text-sm text-earth-600">
-            No price records found for <strong>{crop}</strong> in <strong>{data.detectedState}</strong> today.
+            No price records found for <strong>{crop}</strong> in <strong>{data.detectedState}</strong> in the last 2 days.
           </p>
           <p className="mt-1 text-xs text-earth-500">
             Try refreshing, or check Agmarknet directly for regional price data.

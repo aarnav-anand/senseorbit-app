@@ -84,11 +84,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // Get today's and yesterday's dates
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+    
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0]; // YYYY-MM-DD format
+
     // data.gov.in Agmarknet daily price dataset
     const agmarknetUrl = new URL('https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070');
     agmarknetUrl.searchParams.set('api-key', apiKey);
     agmarknetUrl.searchParams.set('format', 'json');
-    agmarknetUrl.searchParams.set('limit', '25');
+    agmarknetUrl.searchParams.set('limit', '50'); // Increased to get both today and yesterday
     agmarknetUrl.searchParams.set('filters[commodity]', commodity);
     if (detectedState && detectedState !== 'Unknown') {
       agmarknetUrl.searchParams.set('filters[state]', detectedState);
@@ -130,8 +139,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       };
     }).filter((p) => p.market && p.modalPrice > 0);
 
+    // Separate today's and yesterday's prices
+    const todayPrices = prices.filter((p) => p.arrivalDate === todayStr);
+    const yesterdayPrices = prices.filter((p) => p.arrivalDate === yesterdayStr);
+
+    // If no prices today but prices yesterday, mark as no-prices-today
+    const isNoPricesToday = todayPrices.length === 0 && yesterdayPrices.length > 0;
+
     return res.status(200).json({
-      prices,
+      prices: todayPrices.length > 0 ? todayPrices : yesterdayPrices,
+      previousDayPrices: isNoPricesToday ? yesterdayPrices : undefined,
+      isNoPricesToday,
+      previousDayDate: isNoPricesToday ? yesterdayStr : undefined,
       detectedState,
       source: 'agmarknet',
     });

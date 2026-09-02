@@ -160,6 +160,9 @@ export interface MandiPrice {
 
 export interface MandiResponse {
   prices: MandiPrice[];
+  previousDayPrices?: MandiPrice[];
+  isNoPricesToday?: boolean;
+  previousDayDate?: string;
   detectedState: string;
   source: 'agmarknet' | 'fallback';
   note?: string;
